@@ -1,7 +1,7 @@
 {
-  "name": "poker-addaa-lucknow",
-  "version": "5.0.0",
-  "description": "Poker Addaa Pro - Lucknowi Tahzeeb Edition with Bottom Navigation, PWA iOS/Android Installation, Full Quotes view, and Per-User Win/Loss Historical Records",
+  "name": "poker-addaa-hinglish",
+  "version": "8.0.0",
+  "description": "Poker Addaa Pro - Super Naughty & Adult Humorous Quotes Edition with Lucknow swag, Bottom Navigation and Notch Protection",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

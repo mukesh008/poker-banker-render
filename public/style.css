@@ -2,15 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Smooth Mobile Safe Area Inset */
+/* iOS & Android Notch / Dynamic Island / Status Bar Protection */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+html, body {
+  min-height: 100%;
+  background-color: #020617;
+}
+
 body {
-  padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  /* Extra bottom padding to account for fixed bottom navigation bar + home indicator */
+  padding-bottom: calc(5.5rem + max(0.5rem, env(safe-area-inset-bottom, 0px)));
 }
 
+/* Header safe padding: pushed down below iPhone Notch, Dynamic Island, Battery, Clock & Wi-Fi icons */
+header.shahi-header {
+  padding-top: max(1rem, calc(env(safe-area-inset-top, 0px) + 0.5rem)) !important;
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+}
+
+/* Bottom Navigation Safe Area protection */
 nav#bottomNav {
-  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px)) !important;
 }
 
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;

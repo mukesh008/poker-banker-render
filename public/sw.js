@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-lucknow-v5';
+const CACHE_NAME = 'poker-hinglish-v7';
 const urlsToCache = ['/', '/style.css', '/app.js', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (event) => {

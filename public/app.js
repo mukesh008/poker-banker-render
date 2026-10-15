@@ -1,15 +1,25 @@
 const socket = io();
 
-// Rich Lucknowi Poker Quotes with Tahzeeb, Humor & Wit
-const LUCKNOWI_QUOTES = [
-  "Pehle aap, pehle aap ke chakkar me badshah koi aur loot le gaya huzoor! Tash ke dastarkhwan par tehzeeb dil me rakhiye, par daanw dimaag se lagaiye!",
-  "Hazratganj ki sham aur poker ka jaam... agar samne wale ka bluff na pakad sakein, toh khamoshi se fold farmayein!",
-  "Aadaab huzoor! Kismat sirf patte baant-ti hai, baazi wahi jeetta hai jiske paas sabr aur qaleja dono hon.",
-  "Dost dost na raha jab river par aake hamara Shahi Flush ban gaya!",
-  "All-in lagane me itni jaldi na kijiye janab, mehfil abhi jawan hai aur asrafiyan mehengi!",
-  "Khazanchi (Banker) ki tijori me asrafiyan tabhi aati hain jab samne wala tehzeeb me rehkar ghalat daanw chal bethe.",
-  "Bluff tabhi aazmayein jab mukhalif ke chehre par darr saaf numaya ho!",
-  "Khel me jeet aur haar toh dastoor-e-zamaana hai huzoor, bas aakhir me hisaab bebaak hona chahiye!"
+// 18+ Naughty, Adult & Hilarious Hinglish Poker Quotes (with Lucknow Swag)
+const HINGLISH_QUOTES = [
+  "Pehle aap, pehle aap ke chakkar me gaddi ka badshah koi aur loot le gaya! Poker me zyada sharmaye toh chaddi aur izzat dono utar jayegi!",
+  "Poker aur sex me ek cheez common hai bhai... bluff tabhi tak chalta hai jab tak samne wala check na kar le!",
+  "Jitna time ladki ko patane me lagate ho, utna time cards read karne me laga lo toh raat ko rona nahi padega!",
+  "All-in maarna aur bina protection ke ghusna... dono me achanak lene ke dene pad jaate hain huzoor!",
+  "Hazratganj ki shaam aur poker ka jaam... agar samne wale ka bluff na pakad sako toh pant khulna tay hai!",
+  "Poker me kismat sirf kapde kholne jaisi hai... aage kya nikalega kisi ko nahi pata!",
+  "Dost dost na raha jab river par usne mera flush dekh ke gaaliyan nikaali!",
+  "Fold karna seekho chotey, cinema ka porn-star banne ke chakkar me saare chips kho baithoge!",
+  "Pocket Aces leke baithna aur condom jeb me leke ghoomna ek barabar hai... maza tabhi hai jab samne se call aaye!",
+  "Chips sambhal ke daalo janaab... table pe aag lagaane ke chakkar me ghar pe biwi ke haathon dande na pad jayein!",
+  "Agar tera card khada nahi ho raha toh all-in kyu maar raha hai? Sharafat se fold maar aur chai pi!",
+  "Table pe bluff maarna aur date pe 'Main sirf tumse pyaar karta hu' bolna... dono me pakde gaye toh pitna tay hai!",
+  "Poker ka asli nasha wahi hai... raat ko chips jeeto ya haaro, par subah utho toh kamar zaroor dukhni chahiye!",
+  "Samne wale ke haath me kitna bada maal (stack) hai, uspe nazar rakhna hi asal khiladi ki pehchan hai!",
+  "Jitni tezi se tu Rebuy maang raha hai, utni tezi se toh OYO me room bhi lock nahi hota!",
+  "Table pe shanti aur bed pe toofan... dono jagah zyada jaldbaazi karne se game jaldi khatam ho jaata hai!",
+  "Jab kismat hi l**de lagane par aamada ho... toh badshah aur begum bhi kisi kaam ke nahi rehte!",
+  "Nawab sahab ne kaha tha: Tash me aur ishq me, jab tak samne wala poora nanga na ho jaye... game band mat samjho!"
 ];
 
 const AVATAR_OPTIONS = ['🦁', '🐯', '🦅', '🐺', '🦊', '🦈', '👑', '🃏', '🎩', '🥷', '💀', '💸'];
@@ -56,22 +66,22 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function showRandomQuote() {
-  activeQuoteIndex = Math.floor(Math.random() * LUCKNOWI_QUOTES.length);
+  activeQuoteIndex = Math.floor(Math.random() * HINGLISH_QUOTES.length);
   updateQuoteUI();
 }
 
 function nextRandomQuote() {
-  activeQuoteIndex = (activeQuoteIndex + 1) % LUCKNOWI_QUOTES.length;
+  activeQuoteIndex = (activeQuoteIndex + 1) % HINGLISH_QUOTES.length;
   updateQuoteUI();
 }
 
 function nextRandomQuoteInModal() {
-  activeQuoteIndex = (activeQuoteIndex + 1) % LUCKNOWI_QUOTES.length;
+  activeQuoteIndex = (activeQuoteIndex + 1) % HINGLISH_QUOTES.length;
   updateQuoteUI();
 }
 
 function updateQuoteUI() {
-  const quote = LUCKNOWI_QUOTES[activeQuoteIndex];
+  const quote = HINGLISH_QUOTES[activeQuoteIndex];
   const authQ = document.getElementById('savageQuoteText');
   const lineQ = document.getElementById('activeQuoteLine');
   const modalQ = document.getElementById('fullModalQuoteText');
@@ -144,7 +154,7 @@ async function login() {
   errBox.classList.add('hidden');
 
   if (!userId || !pin) {
-    showAuthError('Apna naam aur 4-digit PIN inayat kijiye pehle!');
+    showAuthError('Apna naam aur 4-digit PIN daalo pehle bhai!');
     return;
   }
 
@@ -155,7 +165,7 @@ async function login() {
       body: JSON.stringify({ userId, pin })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Dakhila na ho saka');
+    if (!res.ok) throw new Error(data.error || 'Login fail ho gaya');
 
     currentUser = data.user;
     selectedProfileAvatar = currentUser.avatar || '🦁';
@@ -201,7 +211,7 @@ function setupLoggedInView() {
     roleBadge.className = 'text-[9px] text-amber-400 font-mono font-black';
     bnavAdmin.classList.remove('hidden');
   } else if (latestState && latestState.game.bankerUserId === currentUser.id) {
-    roleBadge.innerText = 'KHAZANCHI';
+    roleBadge.innerText = 'BANKER';
     roleBadge.className = 'text-[9px] text-emerald-400 font-mono font-black';
     bnavAdmin.classList.add('hidden');
   } else {
@@ -229,7 +239,7 @@ async function submitSignup() {
   const upiId = document.getElementById('regUpi').value;
 
   if (!name || pin.length !== 4) {
-    alert('Naam aur 4-digit PIN dono laazmi hain huzoor!');
+    alert('Naam aur 4-digit PIN dono zaroori hain bhai!');
     return;
   }
 
@@ -266,7 +276,7 @@ function saveProfile() {
     upiId: newUpi
   });
   toggleProfileModal(false);
-  alert('Aapka shahi profile update kar diya gaya hai!');
+  alert('Aapka profile update ho gaya hai!');
 }
 
 function renderApp() {
@@ -274,11 +284,11 @@ function renderApp() {
 
   const userSelect = document.getElementById('loginUserSelect');
   const currentSelected = userSelect.value;
-  userSelect.innerHTML = '<option value="">-- Apna Naam Chuniyega --</option>' +
-    latestState.approvedUsers.map(u => `<option value="${u.id}">${u.avatar} ${u.name}${u.isBanker ? ' (👑 Khazanchi)' : u.isAdmin ? ' (Malak)' : ''}</option>`).join('');
+  userSelect.innerHTML = '<option value="">-- Apna Naam Select Karo --</option>' +
+    latestState.approvedUsers.map(u => `<option value="${u.id}">${u.avatar} ${u.name}${u.isBanker ? ' (👑 Banker)' : u.isAdmin ? ' (Admin)' : ''}</option>`).join('');
   if (currentSelected) userSelect.value = currentSelected;
 
-  document.getElementById('roomCodeDisplay').innerText = `BAITHAK: ${latestState.game.roomCode}`;
+  document.getElementById('roomCodeDisplay').innerText = `ROOM: ${latestState.game.roomCode}`;
   const totalPot = latestState.game.players.reduce((sum, p) => sum + p.totalBuyInCash, 0);
   document.getElementById('statTotalPot').innerText = `₹${totalPot}`;
   document.getElementById('statBaseBuyin').innerText = `₹${latestState.game.baseBuyInCash}`;
@@ -337,7 +347,7 @@ function renderPlayers(players) {
   document.getElementById('playerCountLabel').innerText = `${players.length} Playing`;
 
   if (players.length === 0) {
-    container.innerHTML = `<div class="p-4 text-center text-xs text-slate-500 font-medium">Dastarkhwan khali hai huzoor! "Masnad Sambhaliye" dabayein aur ronaq badhayein.</div>`;
+    container.innerHTML = `<div class="p-4 text-center text-xs text-slate-500 font-medium">Table khali hai bhai! "Seat Pakdo" dabao aur aao.</div>`;
     return;
   }
 
@@ -351,11 +361,11 @@ function renderPlayers(players) {
           <div>
             <div class="text-xs font-bold text-slate-100 flex items-center gap-1.5">
               ${p.name} 
-              ${isBanker ? '<span class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 rounded font-mono">KHAZANCHI</span>' : ''}
+              ${isBanker ? '<span class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 rounded font-mono">BANKER</span>' : ''}
               ${isMe ? '<span class="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1 rounded font-mono">AAP</span>' : ''}
             </div>
             <div class="text-[11px] text-slate-400">
-              Kul Dastak: <b class="text-slate-200 font-mono">₹${p.totalBuyInCash}</b> (${p.totalChipsIssued} pts)
+              Total In: <b class="text-slate-200 font-mono">₹${p.totalBuyInCash}</b> (${p.totalChipsIssued} pts)
             </div>
           </div>
         </div>
@@ -385,17 +395,17 @@ function renderPendingRebuys(rebuys, canApprove) {
       <div class="flex items-center gap-2">
         <span class="text-2xl">${r.avatar || '💸'}</span>
         <div>
-          <span class="font-extrabold text-amber-300 text-sm">${r.name}</span> ne talab kiya: 
+          <span class="font-extrabold text-amber-300 text-sm">${r.name}</span> ne maanga: 
           <b class="text-white font-mono">₹${r.amountCash}</b> (${r.amountChips} pts)
-          <div class="text-[10px] text-amber-400/80 font-mono">${r.time} • Asrafiyan inayat karein aur manzoor karein!</div>
+          <div class="text-[10px] text-amber-400/80 font-mono">${r.time} • Chips do aur approve karo!</div>
         </div>
       </div>
       <div class="flex gap-1.5">
         <button onclick="approveRebuy('${r.requestId}')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-3 py-1.5 rounded-lg shadow active:scale-95">
-          ✓ Qabool
+          ✓ Approve
         </button>
         <button onclick="rejectRebuy('${r.requestId}')" class="bg-rose-950/80 hover:bg-rose-900 border border-rose-800 text-rose-300 font-bold px-2.5 py-1.5 rounded-lg active:scale-95">
-          ✕ Rad
+          ✕ Reject
         </button>
       </div>
     </div>
@@ -405,10 +415,10 @@ function renderPendingRebuys(rebuys, canApprove) {
 function renderExpenses(expenses) {
   const list = document.getElementById('expenseList');
   const total = expenses.reduce((s, e) => s + e.amount, 0);
-  document.getElementById('totalExpenseLabel').innerText = `Kul: ₹${total}`;
+  document.getElementById('totalExpenseLabel').innerText = `Total: ₹${total}`;
 
   if (expenses.length === 0) {
-    list.innerHTML = `<div class="p-4 text-center text-xs text-slate-500">Abhi tak kisi kharche ka اندراج nahi hua.</div>`;
+    list.innerHTML = `<div class="p-4 text-center text-xs text-slate-500">Abhi tak kisi kharche ka hisaab add nahi hua.</div>`;
     return;
   }
 
@@ -418,7 +428,7 @@ function renderExpenses(expenses) {
         <span class="text-lg">${e.avatar || '🧾'}</span>
         <div>
           <div class="font-bold text-slate-200 text-sm">${e.title}</div>
-          <div class="text-[10px] text-slate-400">Adaigi ki: <span class="text-indigo-400 font-bold">${e.payerName}</span> ne (${e.time})</div>
+          <div class="text-[10px] text-slate-400">Paid by: <span class="text-indigo-400 font-bold">${e.payerName}</span> (${e.time})</div>
         </div>
       </div>
       <div class="flex items-center gap-3">
@@ -452,7 +462,7 @@ function renderCashoutInputs(configs) {
         oninput="updateLocalToken('${c.id}', this.value)"
         class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-right text-xs font-mono text-white focus:outline-none focus:border-amber-500" />
       <div class="text-[10px] text-slate-500 text-right font-mono">
-        ₹${(c.chipValue * rate).toFixed(0)} / asrafi
+        ₹${(c.chipValue * rate).toFixed(0)} / chip
       </div>
     </div>
   `).join('');
@@ -470,7 +480,7 @@ function renderCashoutInputs(configs) {
         oninput="updateLocalToken('${c.id}', this.value)"
         class="w-full bg-slate-900 border border-amber-700/60 rounded-lg px-2 py-1 text-right text-xs font-mono text-amber-200 font-bold focus:outline-none focus:border-amber-500" />
       <div class="text-[10px] text-amber-400/80 text-right font-mono font-bold">
-        Qeemat: ₹${(c.chipValue * rate).toFixed(0)} har ek
+        Value: ₹${(c.chipValue * rate).toFixed(0)} each
       </div>
     </div>
   `).join('');
@@ -508,25 +518,25 @@ function renderSettlements(settlement, isBankerOrAdmin) {
   let html = `
     <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2 text-xs">
       <div class="flex justify-between font-mono">
-        <span class="text-slate-400">Kul Tijori Pot:</span>
+        <span class="text-slate-400">Total Pot:</span>
         <span class="text-emerald-400 font-bold text-sm">₹${settlement.totalPot}</span>
       </div>
       <div class="flex justify-between font-mono">
-        <span class="text-slate-400">Kul Dastarkhwan Kharcha:</span>
+        <span class="text-slate-400">Total Kharcha:</span>
         <span class="text-indigo-400 font-bold text-sm">₹${settlement.totalExpenses}</span>
       </div>
       <div class="flex justify-between font-mono">
-        <span class="text-slate-400">Har Khiladi Ka Hissa:</span>
+        <span class="text-slate-400">Fair Share:</span>
         <span class="text-slate-200 font-bold">₹${settlement.fairShare} / person</span>
       </div>
     </div>
 
     <div class="space-y-2">
-      <div class="text-xs font-extrabold text-slate-200 uppercase tracking-wider">Kiska Kitna Nafa/Nuqsan & Adaigi:</div>
+      <div class="text-xs font-extrabold text-slate-200 uppercase tracking-wider">Final Settlement:</div>
   `;
 
   if (settlement.transactions.length === 0) {
-    html += `<div class="p-3 text-center text-xs text-slate-400 bg-slate-950 rounded-xl border border-slate-800">Dilon me safai hai huzoor! Sabka hisaab barabar hai.</div>`;
+    html += `<div class="p-3 text-center text-xs text-slate-400 bg-slate-950 rounded-xl border border-slate-800">Sabka hisaab barabar hai bhai!</div>`;
   } else {
     html += settlement.transactions.map(t => `
       <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl flex items-center justify-between text-xs">
@@ -534,7 +544,7 @@ function renderSettlements(settlement, isBankerOrAdmin) {
           <span class="text-xl">${t.fromAvatar || '💸'}</span>
           <div>
             <div>
-              <span class="text-rose-400 font-extrabold">${t.from}</span> ada karenge 
+              <span class="text-rose-400 font-extrabold">${t.from}</span> dega 
               <span class="text-emerald-400 font-extrabold">${t.to}</span> ko
             </div>
             ${t.upiId ? `<div class="text-[10px] text-slate-400 font-mono">UPI: ${t.upiId}</div>` : ''}
@@ -544,7 +554,7 @@ function renderSettlements(settlement, isBankerOrAdmin) {
           <span class="font-mono font-black text-amber-300 text-sm">₹${t.amount}</span>
           ${t.upiUrl ? `
             <a href="${t.upiUrl}" class="bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white font-black text-[11px] px-3 py-1.5 rounded-lg shadow active:scale-95">
-              Direct UPI Bhejein
+              Direct Pay UPI
             </a>
           ` : ''}
         </div>
@@ -556,11 +566,10 @@ function renderSettlements(settlement, isBankerOrAdmin) {
   container.innerHTML = html;
 }
 
-// Renders complete per-user Win/Loss tables for historical sessions
 function renderDetailedHistory(history) {
   const container = document.getElementById('gameHistoryList');
   if (!history || history.length === 0) {
-    container.innerHTML = `<div class="p-6 text-center text-xs text-slate-500 bg-slate-900 border border-slate-800 rounded-2xl">Koi purana hisaab mahfooz nahi hai huzoor. Khel band hone par mukammal tafseel yahan aayegi!</div>`;
+    container.innerHTML = `<div class="p-6 text-center text-xs text-slate-500 bg-slate-900 border border-slate-800 rounded-2xl">Koi purana hisaab saved nahi hai. Game band hone par summary yahan save hogi!</div>`;
     return;
   }
 
@@ -569,26 +578,23 @@ function renderDetailedHistory(history) {
 
     return `
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
-        
-        <!-- Header Info -->
         <div class="flex justify-between items-start border-b border-slate-800 pb-2.5">
           <div>
             <div class="flex items-center gap-2">
               <span class="text-sm font-black text-amber-400 font-mono">${h.roomCode}</span>
-              <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">Khazanchi: ${h.bankerName}</span>
+              <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">Banker: ${h.bankerName}</span>
             </div>
             <span class="text-[10px] text-slate-400 font-mono block mt-0.5">${h.closedAt}</span>
           </div>
           <div class="text-right">
-            <span class="text-[10px] text-slate-400 block font-mono">Kul Pot: <b class="text-emerald-400 font-mono">₹${h.totalPot}</b></span>
-            <span class="text-[10px] text-slate-400 block font-mono">Kul Kharcha: <b class="text-indigo-400 font-mono">₹${h.totalExpenses}</b></span>
+            <span class="text-[10px] text-slate-400 block font-mono">Pot: <b class="text-emerald-400 font-mono">₹${h.totalPot}</b></span>
+            <span class="text-[10px] text-slate-400 block font-mono">Kharcha: <b class="text-indigo-400 font-mono">₹${h.totalExpenses}</b></span>
           </div>
         </div>
 
-        <!-- Per-User WIN / LOSS Table -->
         <div class="space-y-1.5">
           <div class="text-[11px] font-bold text-slate-200 uppercase tracking-wider flex items-center justify-between">
-            <span>Har Khiladi Ka Nafa / Nuqsan (Win/Loss):</span>
+            <span>Har Khiladi Ka Win / Loss:</span>
             <span class="text-[10px] text-slate-400 font-normal">Final Net Balance</span>
           </div>
           
@@ -617,7 +623,7 @@ function renderDetailedHistory(history) {
                       ${sign}₹${b.finalNet}
                     </div>
                     <span class="text-[9px] px-1.5 py-0.2 rounded border font-mono font-bold ${badgeClass}">
-                      ${isWin ? 'NAFA (WIN)' : isLoss ? 'NUQSAN (LOSS)' : 'EVEN'}
+                      ${isWin ? 'WIN' : isLoss ? 'LOSS' : 'EVEN'}
                     </span>
                   </div>
                 </div>
@@ -626,12 +632,11 @@ function renderDetailedHistory(history) {
           </div>
         </div>
 
-        <!-- Payment Settlements Instructions -->
         <div class="space-y-1.5 pt-1">
-          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Aapas Ki Adaigiyan:</div>
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payments:</div>
           <div class="space-y-1">
             ${(!h.settlement || h.settlement.transactions.length === 0) 
-              ? '<div class="text-[11px] text-slate-500 italic bg-slate-950 p-2 rounded-xl border border-slate-800">Tamam khiladiyon ka hisaab barabar tha.</div>' 
+              ? '<div class="text-[11px] text-slate-500 italic bg-slate-950 p-2 rounded-xl border border-slate-800">Sabka hisaab barabar tha.</div>' 
               : h.settlement.transactions.map(t => `
                 <div class="text-[11px] bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800 flex justify-between items-center">
                   <span><b class="text-rose-400">${t.from}</b> ➔ <b class="text-emerald-400">${t.to}</b></span>
@@ -650,7 +655,7 @@ function renderDetailedHistory(history) {
 function renderAdminUserManagement(users) {
   const container = document.getElementById('adminUserManagementList');
   if (!users || users.length === 0) {
-    container.innerHTML = `<p class="text-xs text-slate-500">Koi user darj nahi hai.</p>`;
+    container.innerHTML = `<p class="text-xs text-slate-500">Koi user registered nahi hai.</p>`;
     return;
   }
 
@@ -662,8 +667,8 @@ function renderAdminUserManagement(users) {
           <div>
             <div class="font-bold text-slate-100 flex items-center gap-1.5">
               ${u.name}
-              ${u.isAdmin ? '<span class="text-[9px] text-amber-400 font-mono">MALAK</span>' : ''}
-              ${u.isBanker ? '<span class="text-[9px] text-emerald-400 font-mono">👑 KHAZANCHI</span>' : ''}
+              ${u.isAdmin ? '<span class="text-[9px] text-amber-400 font-mono">ADMIN</span>' : ''}
+              ${u.isBanker ? '<span class="text-[9px] text-emerald-400 font-mono">👑 BANKER</span>' : ''}
               ${u.isDisabled ? '<span class="text-[9px] bg-rose-950 text-rose-400 border border-rose-800 px-1 rounded">DISABLED</span>' : ''}
               ${!u.isApproved ? '<span class="text-[9px] bg-amber-950 text-amber-300 border border-amber-800 px-1 rounded">PENDING</span>' : ''}
             </div>
@@ -674,21 +679,21 @@ function renderAdminUserManagement(users) {
         <div class="flex items-center gap-1.5">
           ${!u.isApproved ? `
             <button onclick="approveUser(${u.id})" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] px-2.5 py-1 rounded-lg">
-              Manzoor
+              Approve
             </button>
           ` : ''}
 
           ${!u.isAdmin ? `
-            <button onclick="assignBanker(${u.id})" class="bg-amber-600 hover:bg-amber-500 text-slate-950 font-black text-[10px] px-2 py-1 rounded-lg shadow" title="Khazanchi Banayein">
-              👑 Khazanchi
+            <button onclick="assignBanker(${u.id})" class="bg-amber-600 hover:bg-amber-500 text-slate-950 font-black text-[10px] px-2 py-1 rounded-lg shadow" title="Banker Banao">
+              👑 Make Banker
             </button>
             <button onclick="toggleDisableUser(${u.id})" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] px-2 py-1 rounded-lg border border-slate-700">
               ${u.isDisabled ? 'Enable' : 'Disable'}
             </button>
             <button onclick="deleteUser(${u.id})" class="bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-300 text-[10px] px-2 py-1 rounded-lg font-bold">
-              Alahida
+              Delete
             </button>
-          ` : '<span class="text-[10px] text-slate-500 font-mono">Malak</span>'}
+          ` : '<span class="text-[10px] text-slate-500 font-mono">Owner</span>'}
         </div>
       </div>
     `;
@@ -763,7 +768,7 @@ function addExpense() {
   const title = document.getElementById('expenseTitle').value;
   const amount = document.getElementById('expenseAmount').value;
   if (!amount || Number(amount) <= 0) {
-    alert('Kharcha ki sahi raqam darj kijiye huzoor!');
+    alert('Bill ka amount sahi se daalo bhai!');
     return;
   }
   socket.emit('addExpense', { payerId: currentUser.id, title, amount });
@@ -778,7 +783,7 @@ function deleteExpense(id) {
 function submitCashout() {
   if (!currentUser) return;
   socket.emit('submitCashout', { userId: currentUser.id, chipCounts: localChipCounts });
-  alert('Aapka hisaab Khazanchi Sahab ke rubaroo pesh ho chuka hai!');
+  alert('Aapke chips submit ho gaye hain! Banker verify karega.');
 }
 
 function finalizeSettlement() {
@@ -786,7 +791,7 @@ function finalizeSettlement() {
 }
 
 function closeAndArchiveGame() {
-  if (confirm("Khel ka ikhtitaam farmayein? Ye hisaab hamesha ke liye tareekhi dastawez (History) me darj ho jayega!")) {
+  if (confirm("Game band karke history me save karna hai?")) {
     socket.emit('closeAndArchiveGame');
   }
 }
@@ -800,13 +805,13 @@ function toggleDisableUser(userId) {
 }
 
 function deleteUser(userId) {
-  if (confirm("Kya aap waqai is khiladi ko mehfil se alahida karna chahte hain?")) {
+  if (confirm("Pakka is player ko delete karna hai?")) {
     socket.emit('deleteUser', userId);
   }
 }
 
 function assignBanker(userId) {
-  if (confirm("Kya aap in mohtaram ko Tijori ka Khazanchi (Banker) banana chahte hain?")) {
+  if (confirm("Is khiladi ko Banker banana hai?")) {
     socket.emit('assignBanker', userId);
   }
 }
@@ -828,10 +833,9 @@ function saveAdminConfig() {
     baseStartingChips: chips, 
     chipConfig: updatedChipConfig 
   });
-  alert('Naye qawaneen aur asrafiyon ki qeematein kamyabi se mahfooz ho gayin!');
+  alert('Rules aur chip values save ho gayi hain!');
 }
 
-// Bottom Navigation Tab Switching
 function switchTab(tab) {
   const tabs = ['table', 'expenses', 'cashout', 'history', 'admin'];
   tabs.forEach(t => {
