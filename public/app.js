@@ -1,15 +1,15 @@
 const socket = io();
 
-// Savage & Funny Hinglish Poker Quotes
-const SAVAGE_QUOTES = [
-  "Agar pehle 30 minute me pata nahi chala ki table ka bakra kaun hai... toh mere bhai, bakra tu hi hai!",
-  "Fold karna seekh le chotey, cinema ke hero banne ke chakkar me chaddi bik jaati hai!",
-  "Poker me kismat sirf cards baant-ti hai, khel toh jigra aur dimaag khelte hain.",
-  "Dost dost na raha... jab river par bad-beat aake mera full-house bana!",
-  "Rebuy par rebuy lene se kismat nahi badalti, thoda dhyan cards pe bhi de!",
-  "All-in maarna aasan hai, par table se bina roye uthna mushkil hai.",
-  "Bluff tabhi maar jab samne wale ke chehre par darr saaf dikh raha ho!",
-  "Tijori Banker ki hai, par table pe sabse bada shikaari wahi hai jo chupchap chips batorta hai."
+// Rich Lucknowi Poker Quotes with Tahzeeb, Humor & Wit
+const LUCKNOWI_QUOTES = [
+  "Pehle aap, pehle aap ke chakkar me badshah koi aur loot le gaya huzoor! Tash ke dastarkhwan par tehzeeb dil me rakhiye, par daanw dimaag se lagaiye!",
+  "Hazratganj ki sham aur poker ka jaam... agar samne wale ka bluff na pakad sakein, toh khamoshi se fold farmayein!",
+  "Aadaab huzoor! Kismat sirf patte baant-ti hai, baazi wahi jeetta hai jiske paas sabr aur qaleja dono hon.",
+  "Dost dost na raha jab river par aake hamara Shahi Flush ban gaya!",
+  "All-in lagane me itni jaldi na kijiye janab, mehfil abhi jawan hai aur asrafiyan mehengi!",
+  "Khazanchi (Banker) ki tijori me asrafiyan tabhi aati hain jab samne wala tehzeeb me rehkar ghalat daanw chal bethe.",
+  "Bluff tabhi aazmayein jab mukhalif ke chehre par darr saaf numaya ho!",
+  "Khel me jeet aur haar toh dastoor-e-zamaana hai huzoor, bas aakhir me hisaab bebaak hona chahiye!"
 ];
 
 const AVATAR_OPTIONS = ['🦁', '🐯', '🦅', '🐺', '🦊', '🦈', '👑', '🃏', '🎩', '🥷', '💀', '💸'];
@@ -19,51 +19,79 @@ let latestState = null;
 let localChipCounts = {};
 let selectedRegAvatar = '🦁';
 let selectedProfileAvatar = '🦁';
+let activeQuoteIndex = 0;
 
-// PWA Service Worker Registration
+// Service Worker for PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW Reg failed', err));
+    navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW Registration error:', err));
   });
 }
 
-// PWA Install prompt trigger
+// Global PWA prompt handling
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  const btn = document.getElementById('pwaInstallBtn');
-  if (btn) btn.classList.remove('hidden');
+  const directBtn = document.getElementById('directInstallBtnModal');
+  if (directBtn) directBtn.classList.remove('hidden');
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-  const installBtn = document.getElementById('pwaInstallBtn');
-  if (installBtn) {
-    installBtn.addEventListener('click', async () => {
+  const directBtn = document.getElementById('directInstallBtnModal');
+  if (directBtn) {
+    directBtn.addEventListener('click', async () => {
       if (deferredPrompt) {
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
         if (outcome === 'accepted') {
-          installBtn.classList.add('hidden');
+          toggleInstallGuide(false);
         }
         deferredPrompt = null;
       }
     });
   }
   setupAvatarPickers();
-  showRandomSavageQuote();
+  showRandomQuote();
 });
 
-function showRandomSavageQuote() {
-  const random = SAVAGE_QUOTES[Math.floor(Math.random() * SAVAGE_QUOTES.length)];
-  const qEl = document.getElementById('savageQuoteText');
-  const lineEl = document.getElementById('activeQuoteLine');
-  if (qEl) qEl.innerText = `"${random}"`;
-  if (lineEl) lineEl.innerText = random;
+function showRandomQuote() {
+  activeQuoteIndex = Math.floor(Math.random() * LUCKNOWI_QUOTES.length);
+  updateQuoteUI();
 }
 
 function nextRandomQuote() {
-  showRandomSavageQuote();
+  activeQuoteIndex = (activeQuoteIndex + 1) % LUCKNOWI_QUOTES.length;
+  updateQuoteUI();
+}
+
+function nextRandomQuoteInModal() {
+  activeQuoteIndex = (activeQuoteIndex + 1) % LUCKNOWI_QUOTES.length;
+  updateQuoteUI();
+}
+
+function updateQuoteUI() {
+  const quote = LUCKNOWI_QUOTES[activeQuoteIndex];
+  const authQ = document.getElementById('savageQuoteText');
+  const lineQ = document.getElementById('activeQuoteLine');
+  const modalQ = document.getElementById('fullModalQuoteText');
+
+  if (authQ) authQ.innerText = `"${quote}"`;
+  if (lineQ) lineQ.innerText = quote;
+  if (modalQ) modalQ.innerText = `"${quote}"`;
+}
+
+function showQuoteModal() {
+  updateQuoteUI();
+  toggleQuoteModal(true);
+}
+
+function toggleQuoteModal(show) {
+  document.getElementById('quoteModal').classList.toggle('hidden', !show);
+}
+
+function toggleInstallGuide(show) {
+  document.getElementById('installGuideModal').classList.toggle('hidden', !show);
 }
 
 function setupAvatarPickers() {
@@ -116,7 +144,7 @@ async function login() {
   errBox.classList.add('hidden');
 
   if (!userId || !pin) {
-    showAuthError('Apna naam aur 4-digit PIN daal pehle!');
+    showAuthError('Apna naam aur 4-digit PIN inayat kijiye pehle!');
     return;
   }
 
@@ -127,13 +155,13 @@ async function login() {
       body: JSON.stringify({ userId, pin })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Login fail ho gaya');
+    if (!res.ok) throw new Error(data.error || 'Dakhila na ho saka');
 
     currentUser = data.user;
     selectedProfileAvatar = currentUser.avatar || '🦁';
     localStorage.setItem('poker_user', JSON.stringify(currentUser));
     setupLoggedInView();
-    showRandomSavageQuote();
+    showRandomQuote();
     renderApp();
   } catch (err) {
     showAuthError(err.message);
@@ -152,6 +180,7 @@ function logout() {
   document.getElementById('authSection').classList.remove('hidden');
   document.getElementById('gameDashboard').classList.add('hidden');
   document.getElementById('currentUserBadge').classList.add('hidden');
+  document.getElementById('bottomNav').classList.add('hidden');
   document.getElementById('loginPin').value = '';
 }
 
@@ -160,24 +189,25 @@ function setupLoggedInView() {
   document.getElementById('gameDashboard').classList.remove('hidden');
   document.getElementById('currentUserBadge').classList.remove('hidden');
   document.getElementById('currentUserBadge').classList.add('flex');
+  document.getElementById('bottomNav').classList.remove('hidden');
   document.getElementById('loggedUserName').innerText = currentUser.name;
-  document.getElementById('headerAvatar').innerText = currentUser.avatar || '🦁';
+  document.getElementById('headerAvatar').innerText = currentUser.avatar || '👑';
 
   const roleBadge = document.getElementById('roleBadge');
-  const adminTab = document.getElementById('tabAdminBtn');
+  const bnavAdmin = document.getElementById('bnav_admin');
 
   if (currentUser.isAdmin) {
-    roleBadge.innerText = 'MALAK / ADMIN';
+    roleBadge.innerText = 'MALAK';
     roleBadge.className = 'text-[9px] text-amber-400 font-mono font-black';
-    adminTab.classList.remove('hidden');
+    bnavAdmin.classList.remove('hidden');
   } else if (latestState && latestState.game.bankerUserId === currentUser.id) {
-    roleBadge.innerText = 'BANKER';
+    roleBadge.innerText = 'KHAZANCHI';
     roleBadge.className = 'text-[9px] text-emerald-400 font-mono font-black';
-    adminTab.classList.add('hidden');
+    bnavAdmin.classList.add('hidden');
   } else {
     roleBadge.innerText = 'KHILADI';
     roleBadge.className = 'text-[9px] text-slate-400 font-mono';
-    adminTab.classList.add('hidden');
+    bnavAdmin.classList.add('hidden');
   }
 }
 
@@ -199,7 +229,7 @@ async function submitSignup() {
   const upiId = document.getElementById('regUpi').value;
 
   if (!name || pin.length !== 4) {
-    alert('Naam aur 4-digit PIN compulsory hai bhai!');
+    alert('Naam aur 4-digit PIN dono laazmi hain huzoor!');
     return;
   }
 
@@ -236,7 +266,7 @@ function saveProfile() {
     upiId: newUpi
   });
   toggleProfileModal(false);
-  alert('Profile updated successfully!');
+  alert('Aapka shahi profile update kar diya gaya hai!');
 }
 
 function renderApp() {
@@ -244,11 +274,11 @@ function renderApp() {
 
   const userSelect = document.getElementById('loginUserSelect');
   const currentSelected = userSelect.value;
-  userSelect.innerHTML = '<option value="">-- Apna Naam Chun --</option>' +
-    latestState.approvedUsers.map(u => `<option value="${u.id}">${u.avatar} ${u.name}${u.isBanker ? ' (👑 Banker)' : u.isAdmin ? ' (Admin)' : ''}</option>`).join('');
+  userSelect.innerHTML = '<option value="">-- Apna Naam Chuniyega --</option>' +
+    latestState.approvedUsers.map(u => `<option value="${u.id}">${u.avatar} ${u.name}${u.isBanker ? ' (👑 Khazanchi)' : u.isAdmin ? ' (Malak)' : ''}</option>`).join('');
   if (currentSelected) userSelect.value = currentSelected;
 
-  document.getElementById('roomCodeDisplay').innerText = `ADDAA: ${latestState.game.roomCode}`;
+  document.getElementById('roomCodeDisplay').innerText = `BAITHAK: ${latestState.game.roomCode}`;
   const totalPot = latestState.game.players.reduce((sum, p) => sum + p.totalBuyInCash, 0);
   document.getElementById('statTotalPot').innerText = `₹${totalPot}`;
   document.getElementById('statBaseBuyin').innerText = `₹${latestState.game.baseBuyInCash}`;
@@ -277,7 +307,7 @@ function renderApp() {
   renderExpenses(latestState.game.expenses);
   renderCashoutInputs(latestState.game.chipConfig);
   renderSettlements(latestState.game.lastSettlement, isBankerOrAdmin);
-  renderHistory(latestState.gameHistory);
+  renderDetailedHistory(latestState.gameHistory);
 
   if (currentUser.isAdmin) {
     renderAdminUserManagement(latestState.allUsersForAdmin);
@@ -307,7 +337,7 @@ function renderPlayers(players) {
   document.getElementById('playerCountLabel').innerText = `${players.length} Playing`;
 
   if (players.length === 0) {
-    container.innerHTML = `<div class="p-4 text-center text-xs text-slate-500 font-medium">Table abhi khaali hai! "Seat Pakad" dabao aur shuru karo.</div>`;
+    container.innerHTML = `<div class="p-4 text-center text-xs text-slate-500 font-medium">Dastarkhwan khali hai huzoor! "Masnad Sambhaliye" dabayein aur ronaq badhayein.</div>`;
     return;
   }
 
@@ -321,11 +351,11 @@ function renderPlayers(players) {
           <div>
             <div class="text-xs font-bold text-slate-100 flex items-center gap-1.5">
               ${p.name} 
-              ${isBanker ? '<span class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 rounded font-mono">BANKER</span>' : ''}
-              ${isMe ? '<span class="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1 rounded font-mono">TU</span>' : ''}
+              ${isBanker ? '<span class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 rounded font-mono">KHAZANCHI</span>' : ''}
+              ${isMe ? '<span class="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1 rounded font-mono">AAP</span>' : ''}
             </div>
             <div class="text-[11px] text-slate-400">
-              Total In: <b class="text-slate-200 font-mono">₹${p.totalBuyInCash}</b> (${p.totalChipsIssued} pts)
+              Kul Dastak: <b class="text-slate-200 font-mono">₹${p.totalBuyInCash}</b> (${p.totalChipsIssued} pts)
             </div>
           </div>
         </div>
@@ -355,17 +385,17 @@ function renderPendingRebuys(rebuys, canApprove) {
       <div class="flex items-center gap-2">
         <span class="text-2xl">${r.avatar || '💸'}</span>
         <div>
-          <span class="font-extrabold text-amber-300 text-sm">${r.name}</span> ne maanga: 
+          <span class="font-extrabold text-amber-300 text-sm">${r.name}</span> ne talab kiya: 
           <b class="text-white font-mono">₹${r.amountCash}</b> (${r.amountChips} pts)
-          <div class="text-[10px] text-amber-400/80 font-mono">${r.time} • Physical chips de aur approve kar!</div>
+          <div class="text-[10px] text-amber-400/80 font-mono">${r.time} • Asrafiyan inayat karein aur manzoor karein!</div>
         </div>
       </div>
       <div class="flex gap-1.5">
         <button onclick="approveRebuy('${r.requestId}')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-3 py-1.5 rounded-lg shadow active:scale-95">
-          ✓ Approve
+          ✓ Qabool
         </button>
         <button onclick="rejectRebuy('${r.requestId}')" class="bg-rose-950/80 hover:bg-rose-900 border border-rose-800 text-rose-300 font-bold px-2.5 py-1.5 rounded-lg active:scale-95">
-          ✕
+          ✕ Rad
         </button>
       </div>
     </div>
@@ -375,10 +405,10 @@ function renderPendingRebuys(rebuys, canApprove) {
 function renderExpenses(expenses) {
   const list = document.getElementById('expenseList');
   const total = expenses.reduce((s, e) => s + e.amount, 0);
-  document.getElementById('totalExpenseLabel').innerText = `Total: ₹${total}`;
+  document.getElementById('totalExpenseLabel').innerText = `Kul: ₹${total}`;
 
   if (expenses.length === 0) {
-    list.innerHTML = `<div class="p-4 text-center text-xs text-slate-500">Abhi tak kisi ne koi kharcha log nahi kiya.</div>`;
+    list.innerHTML = `<div class="p-4 text-center text-xs text-slate-500">Abhi tak kisi kharche ka اندراج nahi hua.</div>`;
     return;
   }
 
@@ -388,7 +418,7 @@ function renderExpenses(expenses) {
         <span class="text-lg">${e.avatar || '🧾'}</span>
         <div>
           <div class="font-bold text-slate-200 text-sm">${e.title}</div>
-          <div class="text-[10px] text-slate-400">Bharpaai ki: <span class="text-indigo-400 font-bold">${e.payerName}</span> ne (${e.time})</div>
+          <div class="text-[10px] text-slate-400">Adaigi ki: <span class="text-indigo-400 font-bold">${e.payerName}</span> ne (${e.time})</div>
         </div>
       </div>
       <div class="flex items-center gap-3">
@@ -422,7 +452,7 @@ function renderCashoutInputs(configs) {
         oninput="updateLocalToken('${c.id}', this.value)"
         class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-right text-xs font-mono text-white focus:outline-none focus:border-amber-500" />
       <div class="text-[10px] text-slate-500 text-right font-mono">
-        ₹${(c.chipValue * rate).toFixed(0)} / chip
+        ₹${(c.chipValue * rate).toFixed(0)} / asrafi
       </div>
     </div>
   `).join('');
@@ -440,7 +470,7 @@ function renderCashoutInputs(configs) {
         oninput="updateLocalToken('${c.id}', this.value)"
         class="w-full bg-slate-900 border border-amber-700/60 rounded-lg px-2 py-1 text-right text-xs font-mono text-amber-200 font-bold focus:outline-none focus:border-amber-500" />
       <div class="text-[10px] text-amber-400/80 text-right font-mono font-bold">
-        Value: ₹${(c.chipValue * rate).toFixed(0)} each
+        Qeemat: ₹${(c.chipValue * rate).toFixed(0)} har ek
       </div>
     </div>
   `).join('');
@@ -478,25 +508,25 @@ function renderSettlements(settlement, isBankerOrAdmin) {
   let html = `
     <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2 text-xs">
       <div class="flex justify-between font-mono">
-        <span class="text-slate-400">Total Poker Pot:</span>
+        <span class="text-slate-400">Kul Tijori Pot:</span>
         <span class="text-emerald-400 font-bold text-sm">₹${settlement.totalPot}</span>
       </div>
       <div class="flex justify-between font-mono">
-        <span class="text-slate-400">Total Party Kharcha:</span>
+        <span class="text-slate-400">Kul Dastarkhwan Kharcha:</span>
         <span class="text-indigo-400 font-bold text-sm">₹${settlement.totalExpenses}</span>
       </div>
       <div class="flex justify-between font-mono">
-        <span class="text-slate-400">Per Khiladi Fair Share:</span>
+        <span class="text-slate-400">Har Khiladi Ka Hissa:</span>
         <span class="text-slate-200 font-bold">₹${settlement.fairShare} / person</span>
       </div>
     </div>
 
     <div class="space-y-2">
-      <div class="text-xs font-extrabold text-slate-200 uppercase tracking-wider">Kaun Kisko Kitna Dega (Final Payout):</div>
+      <div class="text-xs font-extrabold text-slate-200 uppercase tracking-wider">Kiska Kitna Nafa/Nuqsan & Adaigi:</div>
   `;
 
   if (settlement.transactions.length === 0) {
-    html += `<div class="p-3 text-center text-xs text-slate-400 bg-slate-950 rounded-xl border border-slate-800">Sabka hisaab barabar! Kisi ko kisi ko ek rupaya nahi dena.</div>`;
+    html += `<div class="p-3 text-center text-xs text-slate-400 bg-slate-950 rounded-xl border border-slate-800">Dilon me safai hai huzoor! Sabka hisaab barabar hai.</div>`;
   } else {
     html += settlement.transactions.map(t => `
       <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl flex items-center justify-between text-xs">
@@ -504,7 +534,7 @@ function renderSettlements(settlement, isBankerOrAdmin) {
           <span class="text-xl">${t.fromAvatar || '💸'}</span>
           <div>
             <div>
-              <span class="text-rose-400 font-extrabold">${t.from}</span> dega 
+              <span class="text-rose-400 font-extrabold">${t.from}</span> ada karenge 
               <span class="text-emerald-400 font-extrabold">${t.to}</span> ko
             </div>
             ${t.upiId ? `<div class="text-[10px] text-slate-400 font-mono">UPI: ${t.upiId}</div>` : ''}
@@ -514,7 +544,7 @@ function renderSettlements(settlement, isBankerOrAdmin) {
           <span class="font-mono font-black text-amber-300 text-sm">₹${t.amount}</span>
           ${t.upiUrl ? `
             <a href="${t.upiUrl}" class="bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white font-black text-[11px] px-3 py-1.5 rounded-lg shadow active:scale-95">
-              Direct Pay UPI
+              Direct UPI Bhejein
             </a>
           ` : ''}
         </div>
@@ -526,59 +556,101 @@ function renderSettlements(settlement, isBankerOrAdmin) {
   container.innerHTML = html;
 }
 
-function renderHistory(history) {
+// Renders complete per-user Win/Loss tables for historical sessions
+function renderDetailedHistory(history) {
   const container = document.getElementById('gameHistoryList');
   if (!history || history.length === 0) {
-    container.innerHTML = `<div class="p-6 text-center text-xs text-slate-500 bg-slate-900 border border-slate-800 rounded-2xl">Koi purana hisaab saved nahi hai. Game band hone par summary yahan save hogi!</div>`;
+    container.innerHTML = `<div class="p-6 text-center text-xs text-slate-500 bg-slate-900 border border-slate-800 rounded-2xl">Koi purana hisaab mahfooz nahi hai huzoor. Khel band hone par mukammal tafseel yahan aayegi!</div>`;
     return;
   }
 
-  container.innerHTML = history.map((h, idx) => `
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2.5 shadow">
-      <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-        <div>
-          <span class="text-xs font-black text-amber-400 font-mono">GAME: ${h.roomCode}</span>
-          <span class="text-[10px] text-slate-400 block">${h.closedAt}</span>
-        </div>
-        <div class="text-right">
-          <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono">Banker: ${h.bankerName}</span>
-        </div>
-      </div>
+  container.innerHTML = history.map((h) => {
+    const balances = (h.settlement && h.settlement.balances) ? h.settlement.balances : [];
 
-      <div class="grid grid-cols-3 gap-1.5 text-center text-[11px] font-mono bg-slate-950 p-2 rounded-xl border border-slate-800">
-        <div>
-          <span class="text-[9px] text-slate-400 block">Total Pot</span>
-          <b class="text-emerald-400">₹${h.totalPot}</b>
-        </div>
-        <div>
-          <span class="text-[9px] text-slate-400 block">Total Kharcha</span>
-          <b class="text-indigo-400">₹${h.totalExpenses}</b>
-        </div>
-        <div>
-          <span class="text-[9px] text-slate-400 block">Khiladi</span>
-          <b class="text-slate-200">${h.playersCount} players</b>
-        </div>
-      </div>
-
-      <!-- Historical Transactions -->
-      <div class="space-y-1 pt-1">
-        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Transfers:</span>
-        ${h.settlement.transactions.length === 0 ? '<div class="text-[10px] text-slate-500">Sab barabar tha.</div>' : ''}
-        ${h.settlement.transactions.map(t => `
-          <div class="text-[11px] bg-slate-950/60 px-2.5 py-1.5 rounded-lg border border-slate-800 flex justify-between items-center">
-            <span><b class="text-rose-400">${t.from}</b> ➔ <b class="text-emerald-400">${t.to}</b></span>
-            <span class="font-mono font-bold text-amber-300">₹${t.amount}</span>
+    return `
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
+        
+        <!-- Header Info -->
+        <div class="flex justify-between items-start border-b border-slate-800 pb-2.5">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-black text-amber-400 font-mono">${h.roomCode}</span>
+              <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">Khazanchi: ${h.bankerName}</span>
+            </div>
+            <span class="text-[10px] text-slate-400 font-mono block mt-0.5">${h.closedAt}</span>
           </div>
-        `).join('')}
+          <div class="text-right">
+            <span class="text-[10px] text-slate-400 block font-mono">Kul Pot: <b class="text-emerald-400 font-mono">₹${h.totalPot}</b></span>
+            <span class="text-[10px] text-slate-400 block font-mono">Kul Kharcha: <b class="text-indigo-400 font-mono">₹${h.totalExpenses}</b></span>
+          </div>
+        </div>
+
+        <!-- Per-User WIN / LOSS Table -->
+        <div class="space-y-1.5">
+          <div class="text-[11px] font-bold text-slate-200 uppercase tracking-wider flex items-center justify-between">
+            <span>Har Khiladi Ka Nafa / Nuqsan (Win/Loss):</span>
+            <span class="text-[10px] text-slate-400 font-normal">Final Net Balance</span>
+          </div>
+          
+          <div class="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden divide-y divide-slate-800/80">
+            ${balances.map(b => {
+              const isWin = b.finalNet > 0;
+              const isLoss = b.finalNet < 0;
+              const colorClass = isWin ? 'text-emerald-400' : isLoss ? 'text-rose-400' : 'text-slate-400';
+              const badgeClass = isWin ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800' : isLoss ? 'bg-rose-950/80 text-rose-300 border-rose-800' : 'bg-slate-800 text-slate-400 border-slate-700';
+              const sign = b.finalNet > 0 ? '+' : '';
+
+              return `
+                <div class="p-2.5 flex items-center justify-between text-xs">
+                  <div class="flex items-center gap-2">
+                    <span class="text-lg">${b.avatar || '👤'}</span>
+                    <div>
+                      <div class="font-bold text-slate-200">${b.name}</div>
+                      <div class="text-[10px] text-slate-400 font-mono">
+                        Buy-in: ₹${b.totalBuyInCash || 0} | Cashout: ₹${b.cashOutValue || 0}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="text-right">
+                    <div class="font-mono font-black text-sm ${colorClass}">
+                      ${sign}₹${b.finalNet}
+                    </div>
+                    <span class="text-[9px] px-1.5 py-0.2 rounded border font-mono font-bold ${badgeClass}">
+                      ${isWin ? 'NAFA (WIN)' : isLoss ? 'NUQSAN (LOSS)' : 'EVEN'}
+                    </span>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Payment Settlements Instructions -->
+        <div class="space-y-1.5 pt-1">
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Aapas Ki Adaigiyan:</div>
+          <div class="space-y-1">
+            ${(!h.settlement || h.settlement.transactions.length === 0) 
+              ? '<div class="text-[11px] text-slate-500 italic bg-slate-950 p-2 rounded-xl border border-slate-800">Tamam khiladiyon ka hisaab barabar tha.</div>' 
+              : h.settlement.transactions.map(t => `
+                <div class="text-[11px] bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800 flex justify-between items-center">
+                  <span><b class="text-rose-400">${t.from}</b> ➔ <b class="text-emerald-400">${t.to}</b></span>
+                  <span class="font-mono font-extrabold text-amber-300">₹${t.amount}</span>
+                </div>
+              `).join('')
+            }
+          </div>
+        </div>
+
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 function renderAdminUserManagement(users) {
   const container = document.getElementById('adminUserManagementList');
   if (!users || users.length === 0) {
-    container.innerHTML = `<p class="text-xs text-slate-500">Koi user registered nahi hai.</p>`;
+    container.innerHTML = `<p class="text-xs text-slate-500">Koi user darj nahi hai.</p>`;
     return;
   }
 
@@ -591,7 +663,7 @@ function renderAdminUserManagement(users) {
             <div class="font-bold text-slate-100 flex items-center gap-1.5">
               ${u.name}
               ${u.isAdmin ? '<span class="text-[9px] text-amber-400 font-mono">MALAK</span>' : ''}
-              ${u.isBanker ? '<span class="text-[9px] text-emerald-400 font-mono">👑 BANKER</span>' : ''}
+              ${u.isBanker ? '<span class="text-[9px] text-emerald-400 font-mono">👑 KHAZANCHI</span>' : ''}
               ${u.isDisabled ? '<span class="text-[9px] bg-rose-950 text-rose-400 border border-rose-800 px-1 rounded">DISABLED</span>' : ''}
               ${!u.isApproved ? '<span class="text-[9px] bg-amber-950 text-amber-300 border border-amber-800 px-1 rounded">PENDING</span>' : ''}
             </div>
@@ -602,21 +674,21 @@ function renderAdminUserManagement(users) {
         <div class="flex items-center gap-1.5">
           ${!u.isApproved ? `
             <button onclick="approveUser(${u.id})" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] px-2.5 py-1 rounded-lg">
-              Approve
+              Manzoor
             </button>
           ` : ''}
 
           ${!u.isAdmin ? `
-            <button onclick="assignBanker(${u.id})" class="bg-amber-600 hover:bg-amber-500 text-slate-950 font-black text-[10px] px-2 py-1 rounded-lg shadow" title="Make Banker">
-              👑 Make Banker
+            <button onclick="assignBanker(${u.id})" class="bg-amber-600 hover:bg-amber-500 text-slate-950 font-black text-[10px] px-2 py-1 rounded-lg shadow" title="Khazanchi Banayein">
+              👑 Khazanchi
             </button>
             <button onclick="toggleDisableUser(${u.id})" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] px-2 py-1 rounded-lg border border-slate-700">
               ${u.isDisabled ? 'Enable' : 'Disable'}
             </button>
             <button onclick="deleteUser(${u.id})" class="bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-300 text-[10px] px-2 py-1 rounded-lg font-bold">
-              Delete
+              Alahida
             </button>
-          ` : '<span class="text-[10px] text-slate-500 font-mono">Owner</span>'}
+          ` : '<span class="text-[10px] text-slate-500 font-mono">Malak</span>'}
         </div>
       </div>
     `;
@@ -667,7 +739,7 @@ function renderAudit(logs) {
   list.innerHTML = logs.slice(0, 10).map(l => `<li>• ${l}</li>`).join('');
 }
 
-// User & Admin Sockets
+// User Actions
 function joinTable() {
   if (!currentUser) return;
   socket.emit('joinTable', { userId: currentUser.id });
@@ -691,7 +763,7 @@ function addExpense() {
   const title = document.getElementById('expenseTitle').value;
   const amount = document.getElementById('expenseAmount').value;
   if (!amount || Number(amount) <= 0) {
-    alert('Bill ka amount sahi se daal!');
+    alert('Kharcha ki sahi raqam darj kijiye huzoor!');
     return;
   }
   socket.emit('addExpense', { payerId: currentUser.id, title, amount });
@@ -706,7 +778,7 @@ function deleteExpense(id) {
 function submitCashout() {
   if (!currentUser) return;
   socket.emit('submitCashout', { userId: currentUser.id, chipCounts: localChipCounts });
-  alert('Tere chips submit ho gaye! Banker verify karega.');
+  alert('Aapka hisaab Khazanchi Sahab ke rubaroo pesh ho chuka hai!');
 }
 
 function finalizeSettlement() {
@@ -714,7 +786,7 @@ function finalizeSettlement() {
 }
 
 function closeAndArchiveGame() {
-  if (confirm("Khel sach me khatam karna hai? Ye saara hisaab purane records (History) me save kar dega!")) {
+  if (confirm("Khel ka ikhtitaam farmayein? Ye hisaab hamesha ke liye tareekhi dastawez (History) me darj ho jayega!")) {
     socket.emit('closeAndArchiveGame');
   }
 }
@@ -728,13 +800,13 @@ function toggleDisableUser(userId) {
 }
 
 function deleteUser(userId) {
-  if (confirm("Pakka is khiladi ko hamesha ke liye delete karna hai?")) {
+  if (confirm("Kya aap waqai is khiladi ko mehfil se alahida karna chahte hain?")) {
     socket.emit('deleteUser', userId);
   }
 }
 
 function assignBanker(userId) {
-  if (confirm("Is khiladi ko tijori ka Banker banana hai?")) {
+  if (confirm("Kya aap in mohtaram ko Tijori ka Khazanchi (Banker) banana chahte hain?")) {
     socket.emit('assignBanker', userId);
   }
 }
@@ -756,22 +828,23 @@ function saveAdminConfig() {
     baseStartingChips: chips, 
     chipConfig: updatedChipConfig 
   });
-  alert('Naye niyam aur chip values save ho gaye!');
+  alert('Naye qawaneen aur asrafiyon ki qeematein kamyabi se mahfooz ho gayin!');
 }
 
+// Bottom Navigation Tab Switching
 function switchTab(tab) {
-  ['table', 'expenses', 'cashout', 'history', 'admin'].forEach(t => {
+  const tabs = ['table', 'expenses', 'cashout', 'history', 'admin'];
+  tabs.forEach(t => {
     const el = document.getElementById(`${t}Tab`);
-    const btn = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}Btn`);
+    const bbtn = document.getElementById(`bnav_${t}`);
     if (el) el.classList.toggle('hidden', t !== tab);
-    if (btn) {
+    if (bbtn) {
       if (t === tab) {
-        btn.classList.add('bg-amber-500', 'text-slate-950', 'font-black');
-        btn.classList.remove('hover:text-slate-200');
+        bbtn.className = 'flex flex-col items-center py-1 px-2.5 rounded-xl text-amber-400 font-extrabold transition scale-105';
       } else {
-        btn.classList.remove('bg-amber-500', 'text-slate-950', 'font-black');
-        btn.classList.add('hover:text-slate-200');
+        bbtn.className = 'flex flex-col items-center py-1 px-2.5 rounded-xl text-slate-400 font-medium transition hover:text-slate-200';
       }
     }
   });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }

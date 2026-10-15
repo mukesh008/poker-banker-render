@@ -1,7 +1,7 @@
 {
-  "name": "poker-addaa-pro",
-  "version": "2.0.0",
-  "description": "Poker Addaa Pro - Professional PWA Poker Night Ledger with Hinglish Swagger, PWA Installation, Avatar support, Admin Player Management, Historical Summaries, and Custom Chip/Dice/Deck Engine",
+  "name": "poker-addaa-lucknow",
+  "version": "5.0.0",
+  "description": "Poker Addaa Pro - Lucknowi Tahzeeb Edition with Bottom Navigation, PWA iOS/Android Installation, Full Quotes view, and Per-User Win/Loss Historical Records",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

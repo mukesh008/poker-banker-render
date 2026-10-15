@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Smooth Mobile Safe Area Inset */
+body {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+}
+
+nav#bottomNav {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
