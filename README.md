@@ -1,46 +1,19 @@
-# ♠️ Poker Night Ledger Pro (Render-Ready)
+# ♠️ Poker Addaa Pro v4 (Desi VIP PWA Edition)
 
-A dedicated, mobile-first web app for private home poker nights (5–6 friends) featuring:
-- **PIN Authentication & Admin Whitelist:** Select your name, enter 4-digit PIN. New players must be approved by Admin.
-- **Dynamic Colored Chip Valuation:** Base buy-in (e.g. ₹500 cash = 1,000 chips, rate ₹0.50/pt), White/Red/Blue/Green custom point values configurable by the Admin.
-- **Banker Rebuy Approval Queue:** Players request rebuys (0.5x, 1x, 2x) from their phones; chips and pot only update once Banker physically approves.
-- **Unified Expense Splitter:** Log hotel bookings, food/drinks, cigarettes. The app calculates fair share and merges it with poker net profits/losses into **one single settlement**.
-- **One-Click UPI Payments:** Generates direct UPI links (`upi://pay`) so losers can pay winners with a single tap.
-
----
-
-## 🚀 Quick Deployment to Render (Free Tier)
-
-### Step 1: Push to GitHub
-1. Create a new GitHub repository: `poker-night-ledger`
-2. Push this project folder:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit of Poker Ledger Pro"
-   git remote add origin https://github.com/<your-username>/poker-night-ledger.git
-   git branch -M main
-   git push -u origin main
-   ```
-
-### Step 2: Deploy on Render
-1. Log in to [dashboard.render.com](https://dashboard.render.com).
-2. Click **New +** -> **Web Service**.
-3. Select your GitHub repository.
-4. Configure:
-   - **Name:** `poker-night-ledger`
-   - **Runtime:** `Node`
-   - **Build Command:** `npm install`
-   - **Start Command:** `npm start`
-   - **Instance Type:** `Free`
-5. Click **Deploy Web Service**.
-
-Render will deploy your app in ~90 seconds and give you a live URL like:  
-`https://poker-night-ledger-xxxx.onrender.com`
-
----
-
-## 🔑 Default Credentials
-- **Admin Name:** `Admin Banker`
-- **Default PIN:** `1234`
-- **Admin Privileges:** Has access to the **⚙️ Admin Tab** to approve new player signups, modify chip denominations, and approve rebuy requests.
+### 🌟 Brand New Features Added:
+1. **Admin Khiladi Management:**
+   - Admin can **Disable** (temporary ban) or **Delete** any player permanently.
+   - Admin can **Make Banker to any player** before or during the game.
+2. **Game Closure & Historical Archive (Purana Hisaab):**
+   - Once all settlements are calculated, Admin/Banker clicks **"Game Finalize Kar Aur Save Kar"**.
+   - Game is saved to the **📜 Purana Hisaab** tab with date, banker, pot, and payout details for all players to inspect anytime.
+3. **PWA Installation Support:**
+   - Manifest + Service worker + Custom App Icon generated.
+   - Direct **"📲 Install App"** button in browser for Android/iPhone home screen install.
+4. **Desi Hinglish & Savage Poker Quotes:**
+   - Hardcore friendly Hinglish banter ("Bakra", "Chaddi bechna", "Jigra", "Tijori", "Kharcha").
+   - Rotates hilarious and savage poker quotes on login and mid-game.
+5. **Custom Avatar Picker:**
+   - Players can choose their avatar (🦁, 🐯, 🦅, 🐺, 🦊, 👑, 🎩, 🥷, etc.) and update UPI ID anytime.
+6. **Custom Chip, Dice & Deck Engine:**
+   - Admin can configure custom point/cash values for White, Red, Blue, Green, Purple, Black chips, and physical Dice & Deck tokens.

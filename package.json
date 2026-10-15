@@ -1,7 +1,7 @@
 {
-  "name": "poker-ledger-pro",
-  "version": "1.0.0",
-  "description": "Real-time Poker Night Ledger with Banker Approvals, Chip Valuation, PIN Auth, and Unified Expense Splitter",
+  "name": "poker-addaa-pro",
+  "version": "2.0.0",
+  "description": "Poker Addaa Pro - Professional PWA Poker Night Ledger with Hinglish Swagger, PWA Installation, Avatar support, Admin Player Management, Historical Summaries, and Custom Chip/Dice/Deck Engine",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

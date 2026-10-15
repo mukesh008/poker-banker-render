@@ -1,301 +1,417 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi" class="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Poker Night Ledger Pro</title>
+  <meta name="theme-color" content="#020617" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Poker Addaa" />
+  <title>Poker Addaa Pro ♠️ The Real Desi Banker</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="/socket.io/socket.io.js"></script>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-amber-500 selection:text-black">
 
-  <!-- Top App Navigation -->
-  <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 px-4 py-3 shadow-md">
+  <!-- Top Desi Header -->
+  <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-4 py-3 shadow-2xl">
     <div class="max-w-2xl mx-auto flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <span class="text-2xl">♠️</span>
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-600 via-amber-400 to-yellow-200 p-0.5 shadow-lg shadow-amber-950/60">
+          <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-lg">
+            ♠️
+          </div>
+        </div>
         <div>
-          <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
-            Poker Ledger <span class="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded font-mono font-normal">PRO</span>
-          </h1>
-          <p id="roomCodeDisplay" class="text-[11px] text-slate-400 font-mono">ROOM: POKER88</p>
+          <div class="flex items-center gap-1.5">
+            <h1 class="text-sm font-extrabold tracking-tight text-white uppercase">Poker Addaa</h1>
+            <span class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1 py-0.2 rounded font-mono font-bold">DESI VIP</span>
+          </div>
+          <p id="roomCodeDisplay" class="text-[10px] text-slate-400 font-mono">ADDAA CODE: ...</p>
         </div>
       </div>
 
-      <div id="currentUserBadge" class="hidden items-center gap-2">
-        <div class="text-right">
-          <div id="loggedUserName" class="text-xs font-semibold text-slate-200">Player</div>
-          <span id="roleBadge" class="text-[10px] text-amber-400 font-mono">MEMBER</span>
-        </div>
-        <button onclick="logout()" class="text-xs text-rose-400 hover:text-rose-300 bg-rose-950/40 border border-rose-800/40 px-2 py-1 rounded">
-          Logout
+      <!-- User Info & Install App Trigger -->
+      <div class="flex items-center gap-2">
+        <button id="pwaInstallBtn" class="hidden bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-950 font-black text-[11px] px-2.5 py-1.5 rounded-lg shadow-md animate-pulse">
+          📲 Install App
         </button>
+
+        <div id="currentUserBadge" class="hidden items-center gap-2">
+          <button onclick="toggleProfileModal(true)" class="flex items-center gap-1.5 bg-slate-800/80 border border-slate-700/80 px-2 py-1 rounded-lg">
+            <span id="headerAvatar" class="text-base">🦁</span>
+            <div class="text-left">
+              <div id="loggedUserName" class="text-[11px] font-bold text-slate-200 leading-none">Player</div>
+              <span id="roleBadge" class="text-[9px] text-amber-400 font-mono block leading-tight">MEMBER</span>
+            </div>
+          </button>
+          <button onclick="logout()" class="text-xs text-rose-400 hover:text-rose-300 bg-rose-950/40 border border-rose-800/40 px-2 py-1 rounded">
+            Exit
+          </button>
+        </div>
       </div>
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="flex-1 max-w-2xl w-full mx-auto p-4 space-y-4">
+  <!-- Main Viewport -->
+  <main class="flex-1 max-w-2xl w-full mx-auto p-3.5 space-y-3.5">
 
-    <!-- Screen 1: Auth Screen (Select Name + PIN or Signup) -->
-    <section id="authSection" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
-      <div class="text-center space-y-1">
-        <h2 class="text-xl font-bold text-slate-100">Welcome to Poker Night</h2>
-        <p class="text-xs text-slate-400">Select your name and enter your 4-digit PIN to join table</p>
+    <!-- Screen 1: Auth (Login & Select Avatar) -->
+    <section id="authSection" class="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-6">
+      
+      <div class="text-center space-y-1.5">
+        <div class="inline-block px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-full text-[11px] font-semibold text-amber-300 font-mono">
+          🃏 Welcome to Friday Night High-Stakes
+        </div>
+        <h2 class="text-2xl font-black text-slate-100 tracking-tight">Apna Addaa Log-in</h2>
+        <p class="text-xs text-slate-400">Apna naam chun, 4-digit PIN daal aur baithak me ghus ja!</p>
+      </div>
+
+      <!-- Savage Poker Quote of the Day -->
+      <div class="bg-slate-950/80 border border-amber-600/30 rounded-2xl p-3.5 relative overflow-hidden shadow-inner">
+        <div class="absolute -right-3 -bottom-3 text-5xl opacity-10 select-none">🔥</div>
+        <div class="text-[10px] uppercase font-bold tracking-wider text-amber-400 mb-0.5">Desi Poker Gyaan:</div>
+        <p id="savageQuoteText" class="text-xs italic text-slate-300 font-medium">
+          "Agar pehle aadhe ghante me tereko nahi pata chala table ka bakra kaun hai... toh mere bhai, bakra tu hi hai!"
+        </p>
       </div>
 
       <!-- Quick Login Form -->
-      <div class="space-y-3 bg-slate-950/50 p-4 rounded-xl border border-slate-800/80">
-        <label class="block text-xs font-medium text-slate-300">Choose Player</label>
-        <select id="loginUserSelect" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
-          <option value="">-- Choose your name --</option>
-        </select>
+      <div class="space-y-3.5 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Select Your Seat / Khiladi</label>
+          <select id="loginUserSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 font-medium focus:outline-none focus:border-amber-500">
+            <option value="">-- Apna Naam Chun --</option>
+          </select>
+        </div>
 
-        <label class="block text-xs font-medium text-slate-300">4-Digit PIN</label>
-        <input type="password" id="loginPin" maxlength="4" placeholder="••••" inputmode="numeric" class="w-full text-center tracking-widest text-lg font-mono bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500" />
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Secret 4-Digit PIN</label>
+          <input type="password" id="loginPin" maxlength="4" placeholder="••••" inputmode="numeric" class="w-full text-center tracking-[0.5em] text-xl font-mono bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-amber-500" />
+        </div>
 
-        <button onclick="login()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-lg text-sm shadow-lg shadow-emerald-950/50 transition">
-          Unlock & Enter Table
+        <button onclick="login()" class="w-full bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-950 font-black py-3 rounded-xl text-sm shadow-xl shadow-amber-950/50 transition active:scale-[0.98]">
+          Ghus Ja Table Par ♠️
         </button>
-        <p id="authError" class="text-xs text-rose-400 text-center hidden"></p>
+        <p id="authError" class="text-xs text-rose-400 text-center font-medium hidden"></p>
       </div>
 
-      <!-- Signup Modal Trigger -->
-      <div class="border-t border-slate-800 pt-4 text-center">
-        <p class="text-xs text-slate-400">First time playing in this club?</p>
-        <button onclick="toggleSignupModal(true)" class="text-xs text-emerald-400 hover:underline font-medium mt-1">
-          + Request New Player Registration
+      <!-- Signup modal open -->
+      <div class="text-center pt-2">
+        <p class="text-xs text-slate-400">Pehli baar aaya hai addaa pe?</p>
+        <button onclick="toggleSignupModal(true)" class="text-xs font-bold text-amber-400 hover:text-amber-300 underline mt-1">
+          + Naya Khiladi Register Kar
         </button>
       </div>
     </section>
 
-    <!-- App Dashboard (Tabs) -->
+    <!-- Screen 2: Game Dashboard -->
     <div id="gameDashboard" class="hidden space-y-4">
 
+      <!-- Savage Floating Quote Banner -->
+      <div class="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border border-slate-800 p-2.5 rounded-xl flex items-center justify-between text-xs text-slate-300">
+        <span class="text-amber-400 mr-2 text-sm">💡</span>
+        <span id="activeQuoteLine" class="flex-1 italic truncate font-medium text-[11px]">Poker me dil nahi, dimaag aur jigra lagta hai!</span>
+        <button onclick="nextRandomQuote()" class="text-[10px] text-slate-400 hover:text-amber-300 ml-2 font-mono underline">Naya Gyaan</button>
+      </div>
+
       <!-- Navigation Tabs -->
-      <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-medium text-slate-400">
-        <button id="tabTableBtn" onclick="switchTab('table')" class="flex-1 py-2 rounded-lg bg-emerald-600 text-white font-semibold transition">
-          ♠️ Poker Table
+      <div class="flex bg-slate-900/90 p-1 rounded-2xl border border-slate-800 text-xs font-semibold text-slate-400">
+        <button id="tabTableBtn" onclick="switchTab('table')" class="flex-1 py-2 rounded-xl bg-amber-500 text-slate-950 font-black transition">
+          ♠️ Table
         </button>
-        <button id="tabExpensesBtn" onclick="switchTab('expenses')" class="flex-1 py-2 rounded-lg hover:text-slate-200 transition">
-          🧾 Expenses
+        <button id="tabExpensesBtn" onclick="switchTab('expenses')" class="flex-1 py-2 rounded-xl hover:text-slate-200 transition">
+          🧾 Kharcha
         </button>
-        <button id="tabCashoutBtn" onclick="switchTab('cashout')" class="flex-1 py-2 rounded-lg hover:text-slate-200 transition">
-          💰 Chip Cashout
+        <button id="tabCashoutBtn" onclick="switchTab('cashout')" class="flex-1 py-2 rounded-xl hover:text-slate-200 transition">
+          💰 Cashout
         </button>
-        <button id="tabAdminBtn" onclick="switchTab('admin')" class="hidden flex-1 py-2 rounded-lg hover:text-amber-300 text-amber-400/80 font-mono transition">
-          ⚙️ Admin
+        <button id="tabHistoryBtn" onclick="switchTab('history')" class="flex-1 py-2 rounded-xl hover:text-slate-200 transition">
+          📜 Purana Hisaab
+        </button>
+        <button id="tabAdminBtn" onclick="switchTab('admin')" class="hidden flex-1 py-2 rounded-xl text-amber-400/80 font-mono hover:text-amber-300 transition">
+          ⚙️ Malak
         </button>
       </div>
 
-      <!-- Tab 1: Poker Table -->
-      <section id="tableTab" class="space-y-4">
-        <!-- Live Table Stats Banner -->
-        <div class="grid grid-cols-3 gap-2 bg-slate-900 border border-slate-800 p-3 rounded-xl text-center">
+      <!-- Tab 1: Live Poker Table -->
+      <section id="tableTab" class="space-y-3.5">
+
+        <!-- Table Summary Card -->
+        <div class="grid grid-cols-3 gap-2 bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 p-3.5 rounded-2xl text-center shadow-lg">
           <div>
-            <div class="text-[10px] uppercase text-slate-400 tracking-wider">Total Pot</div>
-            <div id="statTotalPot" class="text-base font-bold text-emerald-400 font-mono">₹0</div>
+            <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Tijori Pot</div>
+            <div id="statTotalPot" class="text-lg font-black text-emerald-400 font-mono">₹0</div>
           </div>
           <div>
-            <div class="text-[10px] uppercase text-slate-400 tracking-wider">Base Buy-in</div>
-            <div id="statBaseBuyin" class="text-base font-bold text-slate-200 font-mono">₹500</div>
+            <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">1x Buy-in</div>
+            <div id="statBaseBuyin" class="text-lg font-black text-slate-100 font-mono">₹500</div>
           </div>
           <div>
-            <div class="text-[10px] uppercase text-slate-400 tracking-wider">Rate</div>
-            <div id="statRate" class="text-base font-bold text-amber-300 font-mono">₹0.50/pt</div>
+            <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Current Banker</div>
+            <div id="statBankerName" class="text-xs font-bold text-amber-300 truncate mt-1">👑 Admin</div>
           </div>
         </div>
 
-        <!-- Join Table Banner if user hasn't joined -->
-        <div id="joinTableBanner" class="hidden bg-emerald-950/30 border border-emerald-800/60 p-3.5 rounded-xl flex items-center justify-between">
-          <div>
-            <div class="text-sm font-semibold text-emerald-300">You are in spectator mode</div>
-            <div class="text-xs text-slate-400">Join the live seat with initial 1x Buy-in stack</div>
+        <!-- Token Reference Key -->
+        <div class="bg-slate-900 border border-slate-800 p-3 rounded-2xl space-y-2">
+          <div class="flex items-center justify-between text-xs font-bold text-slate-300">
+            <span>Chips & Prop Values</span>
+            <span class="text-[10px] text-amber-400/80 font-mono" id="chipRatioBadge">1 pt = ₹0.50</span>
           </div>
-          <button onclick="joinTable()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-lg">
-            Take Seat (₹500)
+          <div id="tokenReferenceBar" class="flex flex-wrap gap-1.5 text-[11px]"></div>
+        </div>
+
+        <!-- Spectator Banner -->
+        <div id="joinTableBanner" class="hidden bg-emerald-950/30 border border-emerald-700/60 p-3.5 rounded-2xl flex items-center justify-between shadow-lg">
+          <div>
+            <div class="text-xs font-bold text-emerald-300">Tu abhi bahar se dekh raha hai!</div>
+            <div class="text-[11px] text-slate-400">Seat pakad aur base 1x Buy-in leke game me utar.</div>
+          </div>
+          <button onclick="joinTable()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-3.5 py-2 rounded-xl shadow active:scale-95">
+            Seat Pakad (₹500)
           </button>
         </div>
 
-        <!-- Pending Rebuy Alert for Banker -->
+        <!-- Banker Approval Box (Only for Banker/Admin) -->
         <div id="bankerApprovalBox" class="hidden space-y-2">
-          <div class="text-xs font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-            Rebuy Requests Pending Approval
+          <div class="text-xs font-extrabold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
+            Rebuy Requests (Banker Sahab Approval Do!)
           </div>
           <div id="pendingRebuysList" class="space-y-2"></div>
         </div>
 
-        <!-- Quick Rebuy Bar (For In-Game Players) -->
-        <div id="rebuyActionBox" class="hidden bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-2">
+        <!-- Quick Rebuy Action for Seated Players -->
+        <div id="rebuyActionBox" class="hidden bg-slate-900 border border-slate-800 p-3.5 rounded-2xl space-y-2.5">
           <div class="flex justify-between items-center">
-            <span class="text-xs font-semibold text-slate-300">Need More Chips?</span>
-            <span class="text-[11px] text-slate-400">Request will be approved by Banker</span>
+            <span class="text-xs font-bold text-slate-200">Chips Khatam? Rebuy Maang!</span>
+            <span class="text-[10px] text-slate-400">Banker verify karke chips dega</span>
           </div>
           <div class="grid grid-cols-3 gap-2">
-            <button onclick="requestRebuy(0.5)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 py-2 rounded-lg text-xs font-medium">
+            <button onclick="requestRebuy(0.5)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 py-2 rounded-xl text-xs font-semibold">
               Half (0.5x)
             </button>
-            <button onclick="requestRebuy(1.0)" class="bg-emerald-700 hover:bg-emerald-600 text-white py-2 rounded-lg text-xs font-bold shadow">
+            <button onclick="requestRebuy(1.0)" class="bg-amber-600 hover:bg-amber-500 text-slate-950 font-black py-2 rounded-xl text-xs shadow">
               Full (1.0x)
             </button>
-            <button onclick="requestRebuy(2.0)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 py-2 rounded-lg text-xs font-medium">
+            <button onclick="requestRebuy(2.0)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 py-2 rounded-xl text-xs font-semibold">
               Double (2.0x)
             </button>
           </div>
         </div>
 
         <!-- Active Seated Players List -->
-        <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow">
-          <div class="p-3 bg-slate-850 border-b border-slate-800 flex justify-between items-center text-xs font-semibold">
-            <span>Seated Players</span>
-            <span id="playerCountLabel" class="text-slate-400">0 Playing</span>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow">
+          <div class="p-3 bg-slate-850 border-b border-slate-800 flex justify-between items-center text-xs font-bold">
+            <span>Table Pe Bethe Khiladi</span>
+            <span id="playerCountLabel" class="text-slate-400 font-mono">0 Playing</span>
           </div>
-          <div id="activePlayersList" class="divide-y divide-slate-800/80">
-            <!-- Dynamically populated -->
-          </div>
+          <div id="activePlayersList" class="divide-y divide-slate-800/80"></div>
         </div>
       </section>
 
-      <!-- Tab 2: Shared Expenses (Hotel, Drinks, Cigarettes) -->
-      <section id="expensesTab" class="hidden space-y-4">
-        <!-- Add Expense Card -->
-        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
-          <div class="text-sm font-semibold text-slate-200">Log Shared Expense</div>
+      <!-- Tab 2: Shared Expenses (Hotel, Swiggy, Gold Flake) -->
+      <section id="expensesTab" class="hidden space-y-3.5">
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
+          <div class="text-xs font-bold text-slate-200 uppercase tracking-wider">Party / Kharcha Log Kar (Hotel, Daaru, Sutta, Khaana)</div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <input type="text" id="expenseTitle" placeholder="e.g. Hotel, Swiggy, Drinks" class="bg-slate-800 border border-slate-700 px-3 py-2 rounded-lg text-xs focus:outline-none focus:border-emerald-500" />
-            <input type="number" id="expenseAmount" placeholder="Amount (₹)" class="bg-slate-800 border border-slate-700 px-3 py-2 rounded-lg text-xs focus:outline-none focus:border-emerald-500" />
-            <button onclick="addExpense()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs py-2 rounded-lg">
-              + Split with Table
+            <input type="text" id="expenseTitle" placeholder="Kisme udaaye? (e.g. Hotel, Swiggy, Sutta)" class="bg-slate-800 border border-slate-700 px-3 py-2 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500" />
+            <input type="number" id="expenseAmount" placeholder="Kitna bill aaya? (₹)" class="bg-slate-800 border border-slate-700 px-3 py-2 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-amber-500" />
+            <button onclick="addExpense()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2 rounded-xl shadow">
+              + Sabme Barabar Baat
             </button>
           </div>
         </div>
 
-        <!-- Expenses List & Fair Share Breakdown -->
-        <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-          <div class="p-3 bg-slate-850 border-b border-slate-800 flex justify-between items-center text-xs font-semibold">
-            <span>Logged Expenses</span>
-            <span id="totalExpenseLabel" class="text-indigo-400">Total: ₹0</span>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+          <div class="p-3 bg-slate-850 border-b border-slate-800 flex justify-between items-center text-xs font-bold">
+            <span>Aaj Ke Kharchon Ki List</span>
+            <span id="totalExpenseLabel" class="text-indigo-400 font-mono font-bold">Total: ₹0</span>
           </div>
           <div id="expenseList" class="divide-y divide-slate-800"></div>
         </div>
       </section>
 
       <!-- Tab 3: Chip Cashout & Final Settlement -->
-      <section id="cashoutTab" class="hidden space-y-4">
-        <!-- Colored Chip Counter for current player -->
-        <div id="playerCashoutBox" class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-4">
+      <section id="cashoutTab" class="hidden space-y-3.5">
+        
+        <!-- Player Cashout Form -->
+        <div id="playerCashoutBox" class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3.5 shadow">
           <div>
-            <h3 class="text-sm font-bold text-slate-200">Count Your Colored Chips</h3>
-            <p class="text-xs text-slate-400">Enter physical chip counts to calculate your cashout</p>
+            <h3 class="text-sm font-bold text-slate-100">Khel Khatam: Apne Chips & Token Gin!</h3>
+            <p class="text-xs text-slate-400">Tere paas jo chips, dice ya deck bache hain unki sankhya daal.</p>
           </div>
 
-          <div id="chipInputGrid" class="grid grid-cols-2 gap-3">
-            <!-- Dynamically populated chip counters -->
+          <!-- Regular Colored Chips -->
+          <div class="space-y-1.5">
+            <div class="text-[11px] font-bold text-slate-300">Standard Colored Chips</div>
+            <div id="regularChipGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
           </div>
 
-          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex justify-between items-center text-xs">
+          <!-- High-Value Props -->
+          <div class="space-y-1.5 pt-2 border-t border-slate-800">
+            <div class="text-[11px] font-bold text-amber-400 flex items-center justify-between">
+              <span>Bade Tokens (High Stakes)</span>
+              <span class="text-[9px] bg-amber-400/10 border border-amber-400/30 text-amber-300 px-1.5 py-0.2 rounded font-mono">DICE & DECK</span>
+            </div>
+            <div id="specialPropGrid" class="grid grid-cols-2 gap-2"></div>
+          </div>
+
+          <!-- Total Calculation preview -->
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
             <div>
-              <span class="text-slate-400 block">Total Chips:</span>
-              <span id="cashoutTotalChips" class="font-mono font-bold text-slate-200 text-sm">0 pts</span>
+              <span class="text-slate-400 block text-[10px]">Total Calculated Points:</span>
+              <span id="cashoutTotalChips" class="font-mono font-extrabold text-slate-100 text-sm">0 pts</span>
             </div>
             <div class="text-right">
-              <span class="text-slate-400 block">Cashout Value:</span>
-              <span id="cashoutCashValue" class="font-mono font-bold text-emerald-400 text-sm">₹0.00</span>
+              <span class="text-slate-400 block text-[10px]">Cashout Real Rupee:</span>
+              <span id="cashoutCashValue" class="font-mono font-extrabold text-emerald-400 text-sm">₹0.00</span>
             </div>
           </div>
 
-          <button onclick="submitCashout()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg text-xs shadow">
-            Submit Chip Count
+          <button onclick="submitCashout()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-xl text-xs shadow active:scale-98">
+            Stack Submit Kar Banker Ko ✓
           </button>
         </div>
 
-        <!-- Final Settlement Box -->
-        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
+        <!-- Unified Settlement Card -->
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3 shadow">
           <div class="flex justify-between items-center">
             <div>
-              <h3 class="text-sm font-bold text-slate-200">Unified Settlement</h3>
-              <p class="text-xs text-slate-400">Poker profits + Shared expenses combined</p>
+              <h3 class="text-sm font-extrabold text-slate-100">Final Hisaab (Poker + Kharcha)</h3>
+              <p class="text-[11px] text-slate-400">Sabka plus-minus jod ke ek single hisaab</p>
             </div>
-            <button id="btnFinalize" onclick="finalizeSettlement()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
-              Calculate Payouts
+            <button id="btnFinalize" onclick="finalizeSettlement()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow">
+              Hisaab Calculate Kar
             </button>
           </div>
 
           <div id="settlementReport" class="space-y-3">
-            <p class="text-xs text-slate-500 text-center py-2">Click Calculate Payouts to generate direct UPI settlement links.</p>
+            <p class="text-xs text-slate-500 text-center py-2">Game khatam hone par "Hisaab Calculate Kar" dabaao.</p>
+          </div>
+
+          <!-- Close Game & Archive (Only for Admin or Banker) -->
+          <div id="closeGameSection" class="hidden border-t border-slate-800 pt-3">
+            <button onclick="closeAndArchiveGame()" class="w-full bg-gradient-to-r from-rose-700 to-red-600 hover:from-rose-600 hover:to-red-500 text-white font-extrabold py-2.5 rounded-xl text-xs shadow-lg active:scale-98">
+              🏁 Game Finalize Kar Aur Save Kar (Archive)
+            </button>
+            <p class="text-[10px] text-slate-400 text-center mt-1">Ye summary ko permanent history me daal dega aur naya room kholega.</p>
           </div>
         </div>
       </section>
 
-      <!-- Tab 4: Admin Controls -->
+      <!-- Tab 4: Game History (Purana Hisaab) -->
+      <section id="historyTab" class="hidden space-y-3.5">
+        <div class="flex justify-between items-center">
+          <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">Purane Poker Addaa Sessions</h3>
+          <span class="text-[10px] text-slate-400 font-mono">Saved Summaries</span>
+        </div>
+        <div id="gameHistoryList" class="space-y-3">
+          <!-- Dynamically populated past game cards -->
+        </div>
+      </section>
+
+      <!-- Tab 5: Admin Panel (Malak Controls) -->
       <section id="adminTab" class="hidden space-y-4">
-        <!-- Pending Users Whitelist -->
-        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
-          <h3 class="text-sm font-bold text-amber-400">Approve New Players</h3>
-          <div id="pendingUsersList" class="space-y-2"></div>
+        
+        <!-- Manage Players: Approve, Disable, Delete & Assign Banker -->
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3 shadow">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-amber-400">Khiladiyon Ka Control (Malak Power)</h3>
+            <span class="text-[10px] text-slate-400">Ban, Delete, Assign Banker</span>
+          </div>
+          <div id="adminUserManagementList" class="space-y-2"></div>
         </div>
 
-        <!-- Chip Denominations & Game Configuration -->
-        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
-          <h3 class="text-sm font-bold text-slate-200">Game Configuration</h3>
-          <div class="grid grid-cols-2 gap-3 text-xs">
+        <!-- Custom Chips & Prop Valuation Engine -->
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3 shadow">
+          <div>
+            <h3 class="text-sm font-bold text-emerald-400">⚙️ Fix Values: Chips, Dice & Deck</h3>
+            <p class="text-xs text-slate-400">Admin yahan har ek chip, dice aur deck ki points value fix kar sakta hai.</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
             <div>
-              <label class="block text-slate-400 mb-1">Base Cash (₹)</label>
-              <input type="number" id="adminBaseCash" value="500" class="w-full bg-slate-800 border border-slate-700 px-3 py-2 rounded-lg" />
+              <label class="block text-slate-400 mb-1">Base Buy-in Cash (₹)</label>
+              <input type="number" id="adminBaseCash" value="500" class="w-full bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-lg text-white font-mono" />
             </div>
             <div>
-              <label class="block text-slate-400 mb-1">Chips per Buy-in</label>
-              <input type="number" id="adminBaseChips" value="1000" class="w-full bg-slate-800 border border-slate-700 px-3 py-2 rounded-lg" />
+              <label class="block text-slate-400 mb-1">Chips per Buy-in (pts)</label>
+              <input type="number" id="adminBaseChips" value="1000" class="w-full bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-lg text-white font-mono" />
             </div>
           </div>
 
-          <button onclick="saveAdminConfig()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs py-2 px-4 rounded-lg">
-            Save & Update Table Ratio
-          </button>
-        </div>
+          <div id="adminTokenConfigList" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs"></div>
 
-        <div class="border-t border-slate-800 pt-3 flex justify-between items-center">
-          <span class="text-xs text-rose-400 font-semibold">Danger Zone</span>
-          <button onclick="resetGameSession()" class="bg-rose-950/60 border border-rose-800 text-rose-300 text-xs px-3 py-1.5 rounded-lg">
-            Reset Game Table
+          <button onclick="saveAdminConfig()" class="w-full bg-amber-600 hover:bg-amber-500 text-slate-950 font-black text-xs py-2.5 rounded-xl shadow transition">
+            Save & Update Table Rules
           </button>
         </div>
       </section>
 
       <!-- Live Audit Feed -->
-      <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 text-xs text-slate-400 space-y-1">
-        <span class="font-semibold text-slate-300 block mb-1">Live Audit Feed:</span>
-        <ul id="auditLogList" class="space-y-1 max-h-28 overflow-y-auto font-mono text-[11px]"></ul>
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-3 text-xs text-slate-400 space-y-1">
+        <span class="font-bold text-slate-300 block mb-1">Live Addaa Khabrein:</span>
+        <ul id="auditLogList" class="space-y-1 max-h-24 overflow-y-auto font-mono text-[11px]"></ul>
       </div>
 
     </div>
 
   </main>
 
-  <!-- Signup Modal -->
-  <div id="signupModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-5 space-y-4">
+  <!-- Player Profile Modal (Change Avatar & UPI ID) -->
+  <div id="profileModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
       <div class="flex justify-between items-center">
-        <h3 class="font-bold text-sm text-slate-100">Player Registration</h3>
+        <h3 class="font-extrabold text-sm text-slate-100">Apna Avatar & UPI Badlo</h3>
+        <button onclick="toggleProfileModal(false)" class="text-slate-400 hover:text-white">&times;</button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1.5">Avatar Chun:</label>
+          <div id="profileAvatarPicker" class="grid grid-cols-6 gap-2 text-2xl text-center"></div>
+        </div>
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">UPI ID (Paisa lene ke liye)</label>
+          <input type="text" id="profileUpi" placeholder="e.g. yourname@okhdfcbank" class="w-full bg-slate-800 border border-slate-700 px-3 py-2 rounded-xl text-slate-100 font-mono" />
+        </div>
+        <button onclick="saveProfile()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-xl shadow">
+          Profile Update Kar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Registration Modal -->
+  <div id="signupModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center">
+        <h3 class="font-extrabold text-sm text-slate-100">Naye Khiladi Ki Entry</h3>
         <button onclick="toggleSignupModal(false)" class="text-slate-400 hover:text-white">&times;</button>
       </div>
       <div class="space-y-3 text-xs">
         <div>
-          <label class="block text-slate-300 mb-1">Your Name</label>
-          <input type="text" id="regName" placeholder="e.g. Charlie" class="w-full bg-slate-800 border border-slate-700 px-3 py-2 rounded-lg text-slate-100" />
+          <label class="block text-slate-300 font-semibold mb-1">Tera Asli Naam</label>
+          <input type="text" id="regName" placeholder="e.g. Bunty, Munna, Rohit" class="w-full bg-slate-800 border border-slate-700 px-3 py-2 rounded-xl text-slate-100" />
         </div>
         <div>
-          <label class="block text-slate-300 mb-1">Set 4-Digit PIN</label>
-          <input type="password" id="regPin" maxlength="4" placeholder="••••" inputmode="numeric" class="w-full text-center tracking-widest text-base font-mono bg-slate-800 border border-slate-700 px-3 py-2 rounded-lg text-slate-100" />
+          <label class="block text-slate-300 font-semibold mb-1.5">Avatar Chun</label>
+          <div id="signupAvatarPicker" class="grid grid-cols-6 gap-1.5 text-2xl text-center"></div>
         </div>
         <div>
-          <label class="block text-slate-300 mb-1">UPI ID (For Direct Payments)</label>
-          <input type="text" id="regUpi" placeholder="e.g. name@okhdfcbank" class="w-full bg-slate-800 border border-slate-700 px-3 py-2 rounded-lg text-slate-100" />
+          <label class="block text-slate-300 font-semibold mb-1">Set 4-Digit Secret PIN</label>
+          <input type="password" id="regPin" maxlength="4" placeholder="••••" inputmode="numeric" class="w-full text-center tracking-[0.5em] text-base font-mono bg-slate-800 border border-slate-700 px-3 py-2 rounded-xl text-slate-100" />
         </div>
-        <button onclick="submitSignup()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg shadow">
-          Submit for Approval
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">UPI ID (GPay / PhonePe / Paytm)</label>
+          <input type="text" id="regUpi" placeholder="e.g. bunty@upi" class="w-full bg-slate-800 border border-slate-700 px-3 py-2 rounded-xl text-slate-100 font-mono" />
+        </div>
+        <button onclick="submitSignup()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2.5 rounded-xl shadow">
+          Admin Se Permission Maang
         </button>
       </div>
     </div>
