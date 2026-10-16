@@ -220,6 +220,22 @@
 
       <!-- ==================== TAB 2: SEPARATE KHARCHA TAB ==================== -->
       <section id="expensesTab" class="hidden space-y-4">
+        <!-- LIVE REAL-TIME KHARCHA & FAIR SHARE BANNER (Sabhi Khiladiyon Ko Live Dikhega) -->
+        <div class="grid grid-cols-3 gap-2 glass-card p-3.5 rounded-2xl text-center shadow-lg border border-indigo-500/30">
+          <div>
+            <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Kul Party Kharcha</div>
+            <div id="liveTotalKharcha" class="text-lg font-black text-indigo-400 font-mono mt-0.5">₹0</div>
+          </div>
+          <div>
+            <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Kul Khiladi</div>
+            <div id="liveKharchaPlayerCount" class="text-lg font-black text-slate-200 font-mono mt-0.5">0</div>
+          </div>
+          <div>
+            <div class="text-[9px] uppercase tracking-wider text-amber-400 font-bold">Har Ek Ka Hissa</div>
+            <div id="liveFairShare" class="text-lg font-black text-amber-300 font-mono mt-0.5">₹0</div>
+          </div>
+        </div>
+
         <!-- Add Expense Card -->
         <div class="glass-card p-4 rounded-2xl space-y-3 border border-white/10">
           <div class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">

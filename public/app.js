@@ -296,6 +296,16 @@ function renderApp() {
   document.getElementById('statBankerName').innerText = `👑 ${latestState.game.bankerName}`;
   document.getElementById('chipRatioBadge').innerText = `1 pt = ₹${latestState.game.ratePerChip}`;
 
+  // Real-time Live Party Kharcha & Har Khiladi Ka Hissa update (Live for all players)
+  const expStats = latestState.game.liveExpenseStats || { totalExpenses: 0, playerCount: 1, fairShare: 0 };
+  const totalExpEl = document.getElementById('liveTotalKharcha');
+  const countEl = document.getElementById('liveKharchaPlayerCount');
+  const fairShareEl = document.getElementById('liveFairShare');
+  if (totalExpEl) totalExpEl.innerText = `₹${expStats.totalExpenses}`;
+  if (countEl) countEl.innerText = `${expStats.playerCount} log`;
+  if (fairShareEl) fairShareEl.innerText = `₹${expStats.fairShare}`;
+
+
   if (!currentUser) {
     const saved = localStorage.getItem('poker_user');
     if (saved) {

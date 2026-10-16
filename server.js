@@ -83,6 +83,52 @@ let state = {
   gameHistory: []
 };
 
+
+// ------------------- AUTOMATED POSTGRESQL PERSISTENCE ENGINE -------------------
+async function initDatabase() {
+  if (!pool) return;
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS app_storage (
+        key VARCHAR(50) PRIMARY KEY,
+        data JSONB NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    const res = await pool.query(`SELECT data FROM app_storage WHERE key = 'poker_state' LIMIT 1;`);
+    if (res.rows.length > 0 && res.rows[0].data) {
+      const saved = res.rows[0].data;
+      if (saved.users && saved.users.length > 0) state.users = saved.users;
+      if (saved.game) state.game = saved.game;
+      if (saved.gameHistory) state.gameHistory = saved.gameHistory;
+      console.log(`📦 Restored persistent data: ${state.users.length} users, ${state.gameHistory.length} archived sessions!`);
+    } else {
+      await saveStateToDatabase();
+    }
+  } catch (err) {
+    console.error('Database initialization error:', err.message);
+  }
+}
+
+async function saveStateToDatabase() {
+  if (pool) {
+    try {
+      const payload = JSON.stringify({
+        users: state.users,
+        game: state.game,
+        gameHistory: state.gameHistory
+      });
+      await pool.query(`
+        INSERT INTO app_storage (key, data, updated_at)
+        VALUES ('poker_state', $1::jsonb, CURRENT_TIMESTAMP)
+        ON CONFLICT (key) DO UPDATE SET data = $1::jsonb, updated_at = CURRENT_TIMESTAMP;
+      `, [payload]);
+    } catch (e) {
+      console.error('Save state to PostgreSQL error:', e.message);
+    }
+  }
+}
+
 async function sendPushToUser(userId, payload) {
   const subs = pushSubscriptions[userId] || [];
   const stringPayload = JSON.stringify(payload);
@@ -280,7 +326,9 @@ app.post('/api/auth/signup', (req, res) => {
 
   state.users.push(newUser);
   state.game.auditLog.unshift(`Naya Khiladi [${cleanName}] entry maang raha hai.`);
-  io.emit('stateSync', getPublicState());
+  saveStateToDatabase().catch(()=>{});
+    io.emit('stateSync', getPublicState());
+  saveStateToDatabase().catch(()=>{});
   res.json({ message: 'Registration request submit ho gayi! Admin ke approval ke baad login ho jayega.' });
 });
 
@@ -311,6 +359,17 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 function getPublicState() {
+  // Always compute live expense summary in real-time
+  const usersForExpense = state.game.players.length > 0 ? state.game.players : state.users.filter(u => u.isApproved && !u.isDisabled);
+  const totalExp = state.game.expenses.reduce((s, e) => s + Number(e.amount), 0);
+  const pCount = Math.max(1, usersForExpense.length);
+  const fairShare = Math.round((totalExp / pCount) * 100) / 100;
+  state.game.liveExpenseStats = {
+    totalExpenses: totalExp,
+    playerCount: pCount,
+    fairShare: fairShare
+  };
+
   return {
     approvedUsers: state.users.filter(u => u.isApproved && !u.isDisabled).map(u => ({
       id: u.id,
@@ -338,38 +397,41 @@ function getPublicState() {
 io.on('connection', (socket) => {
   socket.emit('stateSync', getPublicState());
 
-  socket.on('approveUser', (userId) => {
+  socket.on('approveUser', async (userId) => {
     const user = state.users.find(u => u.id === Number(userId));
     if (user) {
       user.isApproved = true;
       user.isDisabled = false;
       state.game.auditLog.unshift(`[${user.name}] ko table me entry de di gayi.`);
-      io.emit('stateSync', getPublicState());
+      saveStateToDatabase().catch(()=>{});
+    io.emit('stateSync', getPublicState());
     }
   });
 
-  socket.on('toggleDisableUser', (userId) => {
+  socket.on('toggleDisableUser', async (userId) => {
     const user = state.users.find(u => u.id === Number(userId));
     if (user && !user.isAdmin) {
       user.isDisabled = !user.isDisabled;
       const act = user.isDisabled ? 'DISABLE' : 'ENABLE';
       state.game.auditLog.unshift(`Admin ne [${user.name}] ko ${act} kiya.`);
-      io.emit('stateSync', getPublicState());
+      saveStateToDatabase().catch(()=>{});
+    io.emit('stateSync', getPublicState());
     }
   });
 
-  socket.on('deleteUser', (userId) => {
+  socket.on('deleteUser', async (userId) => {
     const user = state.users.find(u => u.id === Number(userId));
     if (user && !user.isAdmin) {
       state.users = state.users.filter(u => u.id !== Number(userId));
       state.game.players = state.game.players.filter(p => p.userId !== Number(userId));
       delete pushSubscriptions[userId];
       state.game.auditLog.unshift(`[${user.name}] ko list se delete kar diya gaya.`);
-      io.emit('stateSync', getPublicState());
+      saveStateToDatabase().catch(()=>{});
+    io.emit('stateSync', getPublicState());
     }
   });
 
-  socket.on('assignBanker', (userId) => {
+  socket.on('assignBanker', async (userId) => {
     const user = state.users.find(u => u.id === Number(userId));
     if (user) {
       state.users.forEach(u => { u.isBanker = false; });
@@ -377,7 +439,8 @@ io.on('connection', (socket) => {
       state.game.bankerUserId = user.id;
       state.game.bankerName = user.name;
       state.game.auditLog.unshift(`👑 NAYA BANKER: [${user.name}] ab se tijori sambhalenge!`);
-      io.emit('stateSync', getPublicState());
+      saveStateToDatabase().catch(()=>{});
+    io.emit('stateSync', getPublicState());
 
       sendPushToUser(user.id, {
         title: '👑 Aap Bane Naye Banker!',
@@ -387,7 +450,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('updateConfig', ({ baseBuyInCash, baseStartingChips, chipConfig }) => {
+  socket.on('updateConfig', async ({ baseBuyInCash, baseStartingChips, chipConfig }) => {
     const cash = Number(baseBuyInCash) || 500;
     const chips = Number(baseStartingChips) || 1000;
     state.game.baseBuyInCash = cash;
@@ -400,10 +463,11 @@ io.on('connection', (socket) => {
     recalculatePlayerCashouts();
 
     state.game.auditLog.unshift(`⚙️ Rules Update: ₹${cash} = ${chips} chips (Rate: ₹${state.game.ratePerChip}/pt)`);
+    saveStateToDatabase().catch(()=>{});
     io.emit('stateSync', getPublicState());
   });
 
-  socket.on('joinTable', ({ userId }) => {
+  socket.on('joinTable', async ({ userId }) => {
     const user = state.users.find(u => u.id === Number(userId));
     if (!user || user.isDisabled) return;
     if (state.game.players.some(p => p.userId === user.id)) return;
@@ -426,10 +490,11 @@ io.on('connection', (socket) => {
     });
 
     state.game.auditLog.unshift(`${user.avatar} [${user.name}] ne seat li! Buy-in: ₹${initialCash} (${initialChips} chips)`);
+    saveStateToDatabase().catch(()=>{});
     io.emit('stateSync', getPublicState());
   });
 
-  socket.on('requestRebuy', ({ userId, multiplier }) => {
+  socket.on('requestRebuy', async ({ userId, multiplier }) => {
     const player = state.game.players.find(p => p.userId === Number(userId));
     if (!player) return;
 
@@ -448,6 +513,7 @@ io.on('connection', (socket) => {
 
     state.game.pendingRebuys.push(req);
     state.game.auditLog.unshift(`💸 [${player.name}] ne Rebuy maanga: ₹${cash} (${chips} pts).`);
+    saveStateToDatabase().catch(()=>{});
     io.emit('stateSync', getPublicState());
 
     const pushPayload = {
@@ -468,7 +534,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('approveRebuy', (requestId) => {
+  socket.on('approveRebuy', async (requestId) => {
     const idx = state.game.pendingRebuys.findIndex(r => r.requestId === requestId);
     if (idx === -1) return;
     const req = state.game.pendingRebuys[idx];
@@ -486,10 +552,11 @@ io.on('connection', (socket) => {
       });
     }
     state.game.pendingRebuys.splice(idx, 1);
+    saveStateToDatabase().catch(()=>{});
     io.emit('stateSync', getPublicState());
   });
 
-  socket.on('rejectRebuy', (requestId) => {
+  socket.on('rejectRebuy', async (requestId) => {
     const idx = state.game.pendingRebuys.findIndex(r => r.requestId === requestId);
     if (idx === -1) return;
     const req = state.game.pendingRebuys[idx];
@@ -502,11 +569,12 @@ io.on('connection', (socket) => {
     });
 
     state.game.pendingRebuys.splice(idx, 1);
+    saveStateToDatabase().catch(()=>{});
     io.emit('stateSync', getPublicState());
   });
 
   // Add Expense
-  socket.on('addExpense', ({ payerId, title, amount }) => {
+  socket.on('addExpense', async ({ payerId, title, amount }) => {
     const user = state.users.find(u => u.id === Number(payerId));
     if (!user || !amount || amount <= 0) return;
 
@@ -524,25 +592,28 @@ io.on('connection', (socket) => {
     state.game.auditLog.unshift(`🧾 Kharcha Log: [${user.name}] ne ₹${amount} kharch kiye "${exp.title}" par.`);
     // Auto re-calculate expense settlement if active
     state.game.expenseSettlement = calculatePureExpenseSettlement();
+    saveStateToDatabase().catch(()=>{});
     io.emit('stateSync', getPublicState());
   });
 
   // Delete Expense
-  socket.on('deleteExpense', (expenseId) => {
+  socket.on('deleteExpense', async (expenseId) => {
     state.game.expenses = state.game.expenses.filter(e => e.id !== Number(expenseId));
     state.game.expenseSettlement = calculatePureExpenseSettlement();
+    saveStateToDatabase().catch(()=>{});
     io.emit('stateSync', getPublicState());
   });
 
   // Calculate Kharcha Settlement specifically in Kharcha Tab
-  socket.on('calculateExpenseSettlement', () => {
+  socket.on('calculateExpenseSettlement', async () => {
     state.game.expenseSettlement = calculatePureExpenseSettlement();
     state.game.auditLog.unshift(`🧾 Kharchon ka hisaab calculate ho gaya: Kul ₹${state.game.expenseSettlement.totalExpenses}`);
+    saveStateToDatabase().catch(()=>{});
     io.emit('stateSync', getPublicState());
   });
 
   // Submit Cashout
-  socket.on('submitCashout', ({ userId, chipCounts }) => {
+  socket.on('submitCashout', async ({ userId, chipCounts }) => {
     const player = state.game.players.find(p => p.userId === Number(userId));
     if (!player) return;
 
@@ -561,20 +632,22 @@ io.on('connection', (socket) => {
     player.hasCashedOut = true;
 
     state.game.auditLog.unshift(`💰 [${player.name}] ne chips gine: ${totalPoints} pts = ₹${cashValue} (Net: ${player.netPnl >= 0 ? '+' : ''}₹${player.netPnl})`);
+    saveStateToDatabase().catch(()=>{});
     io.emit('stateSync', getPublicState());
   });
 
   // Calculates strictly PURE POKER settlement in Cashout Tab
-  socket.on('finalizePokerSettlement', () => {
+  socket.on('finalizePokerSettlement', async () => {
     const settlement = calculatePurePokerSettlement();
     state.game.status = 'SETTLED';
     state.game.pokerSettlement = settlement;
     state.game.auditLog.unshift(`🏁 POKER HISAAB TAYAAR: Pot: ₹${settlement.totalPot}. Pure Poker Game ke lena-dena instructions ready.`);
+    saveStateToDatabase().catch(()=>{});
     io.emit('stateSync', getPublicState());
   });
 
   // Archive & Close Session
-  socket.on('closeAndArchiveGame', () => {
+  socket.on('closeAndArchiveGame', async () => {
     if (!state.game.pokerSettlement) {
       state.game.pokerSettlement = calculatePurePokerSettlement();
     }
@@ -614,10 +687,11 @@ io.on('connection', (socket) => {
       expenseSettlement: null
     };
 
+    saveStateToDatabase().catch(()=>{});
     io.emit('stateSync', getPublicState());
   });
 
-  socket.on('updateProfile', ({ userId, avatar, upiId }) => {
+  socket.on('updateProfile', async ({ userId, avatar, upiId }) => {
     const user = state.users.find(u => u.id === Number(userId));
     if (user) {
       if (avatar) user.avatar = avatar;
@@ -627,11 +701,15 @@ io.on('connection', (socket) => {
         if (avatar) p.avatar = avatar;
         if (upiId !== undefined) p.upiId = upiId.trim();
       }
-      io.emit('stateSync', getPublicState());
+      saveStateToDatabase().catch(()=>{});
+    io.emit('stateSync', getPublicState());
     }
   });
 });
 
-server.listen(PORT, () => {
+initDatabase().then(() => {
+  server.listen(PORT, () => {
   console.log(`♠️ Poker Addaa with fully separated Kharcha & Poker tabs running on port ${PORT}`);
+});
+
 });
