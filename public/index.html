@@ -39,7 +39,7 @@
         </div>
       </div>
 
-      <!-- Action Items: Install + Profile + Clean Exit Button -->
+      <!-- Action Items: Bell + Install + Profile + Clean Exit Button -->
       <div class="flex items-center gap-1.5 flex-shrink-0">
         
         <button id="notifBellBtn" onclick="requestPushPermission()" class="flex items-center gap-1 bg-slate-900 border border-white/10 hover:border-amber-500/40 text-amber-400 font-bold text-[11px] px-2 py-1.5 rounded-lg shadow-sm transition active:scale-95" title="Push Notification Enable Karein">
@@ -59,7 +59,6 @@
             </div>
           </button>
           
-          <!-- Clean & Professional Exit Button -->
           <button onclick="logout()" class="text-xs font-bold text-rose-300 hover:text-white bg-rose-950/50 hover:bg-rose-900 border border-rose-800/60 px-2.5 py-1.5 rounded-lg transition active:scale-95" title="Exit / Logout">
             Exit
           </button>
@@ -83,7 +82,6 @@
         <p class="text-xs text-slate-400">Apna naam select karo aur 4-digit PIN daal ke table pe aao.</p>
       </div>
 
-      <!-- Adult & Naughty Poker Joke Card (Full readable text) -->
       <div class="bg-gray-950/80 border border-amber-500/25 rounded-2xl p-4 shadow-inner space-y-2">
         <div class="flex items-center justify-between border-b border-white/10 pb-1.5">
           <span class="text-[11px] font-bold text-amber-400 tracking-wider flex items-center gap-1">
@@ -98,7 +96,6 @@
         </p>
       </div>
 
-      <!-- Quick Login Form -->
       <div class="space-y-3.5 bg-gray-900/60 p-4 rounded-2xl border border-white/10">
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1">Apna Naam Select Karo</label>
@@ -129,7 +126,7 @@
     <!-- Screen 2: Game Dashboard -->
     <div id="gameDashboard" class="hidden space-y-4">
 
-      <!-- Naughty / Adult Quote Strip -->
+      <!-- Quote Strip -->
       <div onclick="showQuoteModal()" class="cursor-pointer glass-card border border-amber-500/25 p-3 rounded-2xl flex items-center justify-between text-xs text-slate-200 shadow-md hover:border-amber-500/40 transition">
         <div class="flex items-center gap-2 overflow-hidden flex-1 mr-2">
           <span class="text-amber-400 text-sm">🔥</span>
@@ -161,7 +158,7 @@
           </div>
         </div>
 
-        <!-- Token Reference Key: Clean Pills -->
+        <!-- Token Reference Key (Shows Red 2000 Chip) -->
         <div class="glass-card p-3 rounded-2xl space-y-2 border border-white/10">
           <div class="flex items-center justify-between text-xs font-bold text-slate-300">
             <span>Chips & Prop Values</span>
@@ -183,7 +180,7 @@
           </button>
         </div>
 
-        <!-- Banker Approval Box (Banker/Admin Only) -->
+        <!-- Banker Approval Box -->
         <div id="bankerApprovalBox" class="hidden space-y-2">
           <div class="text-xs font-extrabold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
             <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
@@ -192,7 +189,7 @@
           <div id="pendingRebuysList" class="space-y-2"></div>
         </div>
 
-        <!-- Quick Rebuy Action for Seated Players -->
+        <!-- Rebuy Action -->
         <div id="rebuyActionBox" class="hidden glass-card p-3.5 rounded-2xl space-y-2.5 border border-white/10">
           <div class="flex justify-between items-center">
             <span class="text-xs font-bold text-slate-200">Chips Khatam? Rebuy Maango</span>
@@ -221,37 +218,61 @@
         </div>
       </section>
 
-      <!-- Tab 2: Shared Expenses -->
-      <section id="expensesTab" class="hidden space-y-3.5">
+      <!-- ==================== TAB 2: SEPARATE KHARCHA TAB ==================== -->
+      <section id="expensesTab" class="hidden space-y-4">
+        <!-- Add Expense Card -->
         <div class="glass-card p-4 rounded-2xl space-y-3 border border-white/10">
-          <div class="text-xs font-bold text-slate-200 uppercase tracking-wider">Hotel, Daaru, Sutta, Ya Kabab Ka Kharcha Daalo</div>
+          <div class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+            <span>🧾</span> Hotel, Daaru, Sutta, Ya Kabab Ka Kharcha Daalo
+          </div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <input type="text" id="expenseTitle" placeholder="Kisme udaaye? (e.g. Swiggy, Sutta, Hotel)" class="bg-gray-900 border border-white/15 px-3 py-2 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500" />
             <input type="number" id="expenseAmount" placeholder="Kitna bill aaya? (₹)" class="bg-gray-900 border border-white/15 px-3 py-2 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-amber-500" />
             <button onclick="addExpense()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2 rounded-xl shadow active:scale-95 transition">
-              + Sabme Barabar Baanto
+              + Splitwise Bill Add Karo
             </button>
           </div>
         </div>
 
+        <!-- Logged Expenses List -->
         <div class="glass-card rounded-2xl overflow-hidden border border-white/10">
           <div class="p-3 bg-gray-900/80 border-b border-white/10 flex justify-between items-center text-xs font-bold">
-            <span>Aaj Ke Kharchon Ki List</span>
+            <span>Logged Expenses (Bills)</span>
             <span id="totalExpenseLabel" class="text-indigo-400 font-mono font-bold">Total: ₹0</span>
           </div>
           <div id="expenseList" class="divide-y divide-white/5"></div>
         </div>
+
+        <!-- SEPARATE DEDICATED KHARCHA SETTLEMENT SECTION (Pure Kharcha Only) -->
+        <div class="glass-card p-4 rounded-2xl space-y-3.5 border border-indigo-500/30 shadow-lg">
+          <div class="flex items-center justify-between border-b border-white/10 pb-2.5">
+            <div>
+              <h3 class="text-xs font-extrabold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span>🧾</span> Sirf Party & Kharcha Ka Lena-Dena (Settlement)
+              </h3>
+              <p class="text-[11px] text-slate-400">Poker game se alag: sirf bills aur splitwise fair share hisaab</p>
+            </div>
+            <button onclick="calculateExpenseSettlementAction()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow active:scale-95 transition">
+              Kharcha Settle Karo
+            </button>
+          </div>
+
+          <div id="pureExpenseSettlementReport" class="space-y-2">
+            <p class="text-xs text-slate-500 text-center py-2">Kharcha settlement dekhne ke liye "Kharcha Settle Karo" dabayein.</p>
+          </div>
+        </div>
       </section>
 
-      <!-- Tab 3: Chip Cashout & Final Settlement -->
-      <section id="cashoutTab" class="hidden space-y-3.5">
+      <!-- ==================== TAB 3: SEPARATE POKER CASHOUT TAB ==================== -->
+      <section id="cashoutTab" class="hidden space-y-4">
+        <!-- Chip Counter Box -->
         <div id="playerCashoutBox" class="glass-card p-4 rounded-2xl space-y-3.5 shadow-lg border border-white/10">
           <div>
             <h3 class="text-sm font-bold text-white">Khel Khatam: Apne Chips & Token Gino</h3>
             <p class="text-xs text-slate-400">Aapke paas jo chips, dice ya deck bache hain unka count daalo.</p>
           </div>
 
-          <!-- Regular Colored Chips -->
+          <!-- Regular Colored Chips (Includes Red 2000 pts) -->
           <div class="space-y-1.5">
             <div class="text-[11px] font-bold text-slate-300">Standard Colored Chips</div>
             <div id="regularChipGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
@@ -283,35 +304,23 @@
           </button>
         </div>
 
-        
-        <!-- Final Settlement Section with SEPARATE Poker, Kharcha, and Combined Views -->
-        <div class="glass-card p-4 rounded-2xl space-y-4 shadow-lg border border-white/10">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
+        <!-- SEPARATE DEDICATED POKER SETTLEMENT SECTION (Pure Poker Only, 0 Kharcha mixed) -->
+        <div class="glass-card p-4 rounded-2xl space-y-3.5 shadow-lg border border-emerald-500/30">
+          <div class="flex items-center justify-between border-b border-white/10 pb-2.5">
             <div>
-              <h3 class="text-sm font-extrabold text-white">Final Hisaab (Separate & Combined)</h3>
-              <p class="text-[11px] text-slate-400">Poker aur Kharcha alag-alag aur ek saath dekhne ke liye</p>
+              <h3 class="text-sm font-extrabold text-white flex items-center gap-1.5">
+                <span>♠️</span> Sirf Poker Game Ka Lena-Dena (No Kharcha)
+              </h3>
+              <p class="text-[11px] text-slate-400">Pure table poker results: Buy-ins aur Rebuys vs Final Cashout</p>
             </div>
-            <button id="btnFinalize" onclick="finalizeSettlement()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow active:scale-95 transition">
-              Hisaab Calculate Karo
+            <button id="btnFinalizePoker" onclick="finalizePokerSettlementAction()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow active:scale-95 transition">
+              Poker Hisaab Nikalo
             </button>
           </div>
 
-          <!-- Section Switcher Tabs within Cashout -->
-          <div class="flex bg-gray-900 p-1 rounded-xl border border-white/10 text-xs font-semibold text-slate-400">
-            <button id="subtab_combined_btn" onclick="switchSettlementSubtab('combined')" class="flex-1 py-1.5 rounded-lg bg-amber-500 text-gray-950 font-black transition">
-              ⚡ Combined Net
-            </button>
-            <button id="subtab_poker_btn" onclick="switchSettlementSubtab('poker')" class="flex-1 py-1.5 rounded-lg hover:text-white transition">
-              ♠️ Sirf Poker
-            </button>
-            <button id="subtab_kharcha_btn" onclick="switchSettlementSubtab('kharcha')" class="flex-1 py-1.5 rounded-lg hover:text-white transition">
-              🧾 Sirf Kharcha
-            </button>
-          </div>
-
-          <!-- Settlement Content Reports -->
-          <div id="settlementReport" class="space-y-3">
-            <p class="text-xs text-slate-500 text-center py-2">Game khatam hone par "Hisaab Calculate Karo" dabayein.</p>
+          <!-- Poker Settlement Content -->
+          <div id="purePokerSettlementReport" class="space-y-3">
+            <p class="text-xs text-slate-500 text-center py-2">Game khatam hone par "Poker Hisaab Nikalo" dabayein.</p>
           </div>
 
           <!-- Close Game & Archive -->
@@ -322,7 +331,6 @@
             <p class="text-[10px] text-slate-400 text-center mt-1">Ye summary ko permanent history me save karke naya room kholega.</p>
           </div>
         </div>
-
       </section>
 
       <!-- Tab 4: Purana Hisaab / Old Sessions -->
@@ -416,7 +424,7 @@
     </div>
   </nav>
 
-  <!-- POPUP 1: Full Naughty / Humorous Poker Quote Reader Modal -->
+  <!-- POPUP 1: Full Quote Reader Modal -->
   <div id="quoteModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
     <div class="glass-card rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl border border-amber-500/40">
       <div class="flex justify-between items-center border-b border-white/10 pb-2">
@@ -439,7 +447,7 @@
     </div>
   </div>
 
-  <!-- POPUP 2: Easy Install App Instructions Modal -->
+  <!-- POPUP 2: Easy Install App Modal -->
   <div id="installGuideModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
     <div class="glass-card rounded-3xl max-w-md w-full p-5 space-y-4 shadow-2xl border border-amber-500/40">
       <div class="flex justify-between items-center border-b border-white/10 pb-2">

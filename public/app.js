@@ -317,7 +317,8 @@ function renderApp() {
   renderPendingRebuys(latestState.game.pendingRebuys, isBankerOrAdmin);
   renderExpenses(latestState.game.expenses);
   renderCashoutInputs(latestState.game.chipConfig);
-  renderSettlements(latestState.game.lastSettlement, isBankerOrAdmin);
+  renderPurePokerSettlement(latestState.game.pokerSettlement, isBankerOrAdmin);
+  renderPureExpenseSettlement(latestState.game.expenseSettlement);
   renderDetailedHistory(latestState.gameHistory);
 
   if (currentUser.isAdmin) {
@@ -504,34 +505,21 @@ function computeLocalCashoutPreview() {
 }
 
 
-let currentSettlementSubtab = 'combined';
-
-function switchSettlementSubtab(tab) {
-  currentSettlementSubtab = tab;
-  ['combined', 'poker', 'kharcha'].forEach(t => {
-    const btn = document.getElementById(`subtab_${t}_btn`);
-    if (btn) {
-      if (t === tab) {
-        btn.className = 'flex-1 py-1.5 rounded-lg bg-amber-500 text-gray-950 font-black transition scale-102';
-      } else {
-        btn.className = 'flex-1 py-1.5 rounded-lg text-slate-400 font-semibold hover:text-white transition';
-      }
-    }
-  });
-  if (latestState && latestState.game && latestState.game.lastSettlement) {
-    const isBankerOrAdmin = currentUser && (currentUser.isAdmin || (latestState.game.bankerUserId === currentUser.id));
-    renderSettlements(latestState.game.lastSettlement, isBankerOrAdmin);
-  }
+function finalizePokerSettlementAction() {
+  socket.emit('finalizePokerSettlement');
 }
 
+function calculateExpenseSettlementAction() {
+  socket.emit('calculateExpenseSettlement');
+}
 
-function renderSettlements(settlement, isBankerOrAdmin) {
-  const container = document.getElementById('settlementReport');
+function renderPurePokerSettlement(settlement, isBankerOrAdmin) {
+  const container = document.getElementById('purePokerSettlementReport');
   const closeBox = document.getElementById('closeGameSection');
 
   if (!settlement) {
     if (closeBox) closeBox.classList.add('hidden');
-    container.innerHTML = '<p class="text-xs text-slate-500 text-center py-2">Game khatam hone par "Hisaab Calculate Karo" dabayein.</p>';
+    container.innerHTML = '<p class="text-xs text-slate-500 text-center py-2">Game khatam hone par "Poker Hisaab Nikalo" dabayein.</p>';
     return;
   }
 
@@ -540,148 +528,112 @@ function renderSettlements(settlement, isBankerOrAdmin) {
   }
 
   let html = `
-    <div class="grid grid-cols-3 gap-2 bg-gray-950 p-3 rounded-xl border border-white/10 text-center text-xs font-mono">
+    <div class="bg-gray-950 p-3.5 rounded-xl border border-emerald-500/30 flex justify-between items-center text-xs font-mono">
       <div>
-        <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-bold">Poker Pot</span>
-        <span class="text-emerald-400 font-bold text-sm">₹${settlement.totalPot}</span>
+        <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-bold">Total Poker Pot</span>
+        <span class="text-emerald-400 font-black text-base">₹${settlement.totalPot}</span>
       </div>
+      <div class="text-right">
+        <span class="text-[9px] text-slate-400 block font-mono">Calculated At</span>
+        <span class="text-slate-200 font-bold">${settlement.calculatedAt || ''}</span>
+      </div>
+    </div>
+
+    <div class="space-y-2">
+      <div class="text-xs font-extrabold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+        <span>♠️</span> Poker Game Ki Direct Adaigi (Who Pays Whom):
+      </div>
+  `;
+
+  const txs = settlement.transactions || [];
+  if (txs.length === 0) {
+    html += `<div class="p-3 text-center text-xs text-slate-400 bg-gray-950 rounded-xl border border-white/10">Poker me kisi ko kisi ko paisa nahi dena. Sab even!</div>`;
+  } else {
+    html += txs.map(t => `
+      <div class="bg-gray-900 border border-emerald-500/20 p-3 rounded-xl flex items-center justify-between text-xs shadow-sm">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl leading-none">${t.fromAvatar || '💸'}</span>
+          <div>
+            <div>
+              <span class="text-rose-400 font-extrabold">${t.from}</span> dega 
+              <span class="text-emerald-400 font-extrabold">${t.to}</span> ko
+            </div>
+            ${t.upiId ? `<div class="text-[10px] text-slate-400 font-mono">UPI: ${t.upiId}</div>` : ''}
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="font-mono font-black text-emerald-400 text-sm">₹${t.amount}</span>
+          ${t.upiUrl ? `
+            <a href="${t.upiUrl}" class="bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white font-black text-[11px] px-3 py-1.5 rounded-lg shadow active:scale-95 transition">
+              Pay Poker UPI
+            </a>
+          ` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+function renderPureExpenseSettlement(settlement) {
+  const container = document.getElementById('pureExpenseSettlementReport');
+  if (!settlement) {
+    container.innerHTML = '<p class="text-xs text-slate-500 text-center py-2">Kharcha settlement dekhne ke liye "Kharcha Settle Karo" dabayein.</p>';
+    return;
+  }
+
+  let html = `
+    <div class="grid grid-cols-2 gap-2 bg-gray-950 p-3 rounded-xl border border-indigo-500/30 text-center text-xs font-mono">
       <div>
-        <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-bold">Party Kharcha</span>
+        <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-bold">Total Party Kharcha</span>
         <span class="text-indigo-400 font-bold text-sm">₹${settlement.totalExpenses}</span>
       </div>
       <div>
-        <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-bold">Fair Share</span>
-        <span class="text-slate-100 font-bold text-sm">₹${settlement.fairShare}/p</span>
+        <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-bold">Har Khiladi Ka Hissa</span>
+        <span class="text-slate-100 font-bold text-sm">₹${settlement.fairShare} / person</span>
       </div>
     </div>
+
+    <div class="space-y-2 pt-1">
+      <div class="text-xs font-extrabold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+        <span>🧾</span> Sirf Kharcha Ka Lena-Dena (Bills Settlement):
+      </div>
   `;
 
-  if (currentSettlementSubtab === 'poker') {
-    // ==================== SIRF POKER HISAAB ====================
-    html += `
-      <div class="space-y-2">
-        <div class="flex justify-between items-center">
-          <span class="text-xs font-extrabold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-            <span>♠️</span> Sirf Poker Ka Lena-Dena (Winnings & Losses):
-          </span>
-          <span class="text-[10px] text-slate-400 font-mono">No expenses added</span>
-        </div>
-    `;
-
-    const txs = settlement.pokerTransactions || [];
-    if (txs.length === 0) {
-      html += `<div class="p-3 text-center text-xs text-slate-400 bg-gray-950 rounded-xl border border-white/10">Poker me koi payments pending nahi hain.</div>`;
-    } else {
-      html += txs.map(t => `
-        <div class="bg-gray-900 border border-emerald-500/20 p-3 rounded-xl flex items-center justify-between text-xs shadow-sm">
-          <div class="flex items-center gap-2.5">
-            <span class="text-xl leading-none">${t.fromAvatar || '💸'}</span>
-            <div>
-              <div>
-                <span class="text-rose-400 font-extrabold">${t.from}</span> dega 
-                <span class="text-emerald-400 font-extrabold">${t.to}</span> ko
-              </div>
-              <div class="text-[10px] text-slate-400 font-mono">Poker Loss Recovery</div>
-            </div>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="font-mono font-black text-emerald-400 text-sm">₹${t.amount}</span>
-            ${t.upiUrl ? `
-              <a href="${t.upiUrl}" class="bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white font-black text-[11px] px-3 py-1.5 rounded-lg shadow active:scale-95 transition">
-                Pay Poker
-              </a>
-            ` : ''}
-          </div>
-        </div>
-      `).join('');
-    }
-    html += `</div>`;
-
-  } else if (currentSettlementSubtab === 'kharcha') {
-    // ==================== SIRF KHARCHA HISAAB ====================
-    html += `
-      <div class="space-y-2">
-        <div class="flex justify-between items-center">
-          <span class="text-xs font-extrabold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
-            <span>🧾</span> Sirf Party & Kharcha Ka Lena-Dena (Food, Hotel, Drinks):
-          </span>
-          <span class="text-[10px] text-slate-400 font-mono">Fair Share Split</span>
-        </div>
-    `;
-
-    const txs = settlement.expenseTransactions || [];
-    if (txs.length === 0) {
-      html += `<div class="p-3 text-center text-xs text-slate-400 bg-gray-950 rounded-xl border border-white/10">Kharchon ka hisaab bilkul barabar hai!</div>`;
-    } else {
-      html += txs.map(t => `
-        <div class="bg-gray-900 border border-indigo-500/20 p-3 rounded-xl flex items-center justify-between text-xs shadow-sm">
-          <div class="flex items-center gap-2.5">
-            <span class="text-xl leading-none">${t.fromAvatar || '🧾'}</span>
-            <div>
-              <div>
-                <span class="text-rose-400 font-extrabold">${t.from}</span> dega 
-                <span class="text-indigo-400 font-extrabold">${t.to}</span> ko
-              </div>
-              <div class="text-[10px] text-slate-400 font-mono">Party Bill Split</div>
-            </div>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="font-mono font-black text-indigo-300 text-sm">₹${t.amount}</span>
-            ${t.upiUrl ? `
-              <a href="${t.upiUrl}" class="bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-500 hover:to-blue-400 text-white font-black text-[11px] px-3 py-1.5 rounded-lg shadow active:scale-95 transition">
-                Pay Bill
-              </a>
-            ` : ''}
-          </div>
-        </div>
-      `).join('');
-    }
-    html += `</div>`;
-
+  const txs = settlement.transactions || [];
+  if (txs.length === 0) {
+    html += `<div class="p-3 text-center text-xs text-slate-400 bg-gray-950 rounded-xl border border-white/10">Kharchon ka hisaab bilkul barabar hai!</div>`;
   } else {
-    // ==================== COMBINED / NET ALL-IN-ONE HISAAB ====================
-    html += `
-      <div class="space-y-2">
-        <div class="flex justify-between items-center">
-          <span class="text-xs font-extrabold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-            <span>⚡</span> Unified Net Settlement (Poker + Kharcha Combined):
-          </span>
-          <span class="text-[10px] text-slate-400 font-mono">Minimum Transfers</span>
-        </div>
-    `;
-
-    const txs = settlement.combinedTransactions || settlement.transactions || [];
-    if (txs.length === 0) {
-      html += `<div class="p-3 text-center text-xs text-slate-400 bg-gray-950 rounded-xl border border-white/10">Sabka hisaab barabar hai bhai! Kisi ko kuch nahi dena.</div>`;
-    } else {
-      html += txs.map(t => `
-        <div class="bg-gray-900 border border-amber-500/30 p-3 rounded-xl flex items-center justify-between text-xs shadow-sm">
-          <div class="flex items-center gap-2.5">
-            <span class="text-xl leading-none">${t.fromAvatar || '💸'}</span>
+    html += txs.map(t => `
+      <div class="bg-gray-900 border border-indigo-500/20 p-3 rounded-xl flex items-center justify-between text-xs shadow-sm">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl leading-none">${t.fromAvatar || '🧾'}</span>
+          <div>
             <div>
-              <div>
-                <span class="text-rose-400 font-extrabold">${t.from}</span> dega 
-                <span class="text-emerald-400 font-extrabold">${t.to}</span> ko
-              </div>
-              ${t.upiId ? `<div class="text-[10px] text-slate-400 font-mono">UPI: ${t.upiId}</div>` : ''}
+              <span class="text-rose-400 font-extrabold">${t.from}</span> dega 
+              <span class="text-indigo-400 font-extrabold">${t.to}</span> ko
             </div>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="font-mono font-black text-amber-300 text-sm">₹${t.amount}</span>
-            ${t.upiUrl ? `
-              <a href="${t.upiUrl}" class="bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white font-black text-[11px] px-3 py-1.5 rounded-lg shadow active:scale-95 transition">
-                Pay All
-              </a>
-            ` : ''}
+            ${t.upiId ? `<div class="text-[10px] text-slate-400 font-mono">UPI: ${t.upiId}</div>` : ''}
           </div>
         </div>
-      `).join('');
-    }
-    html += `</div>`;
+        <div class="flex items-center gap-2">
+          <span class="font-mono font-black text-indigo-300 text-sm">₹${t.amount}</span>
+          ${t.upiUrl ? `
+            <a href="${t.upiUrl}" class="bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-500 hover:to-blue-400 text-white font-black text-[11px] px-3 py-1.5 rounded-lg shadow active:scale-95 transition">
+              Pay Bill UPI
+            </a>
+          ` : ''}
+        </div>
+      </div>
+    `).join('');
   }
 
+  html += `</div>`;
   container.innerHTML = html;
 }
+
 
 
 function renderDetailedHistory(history) {
@@ -692,10 +644,12 @@ function renderDetailedHistory(history) {
   }
 
   container.innerHTML = history.map((h) => {
-    const balances = (h.settlement && h.settlement.balances) ? h.settlement.balances : [];
+    const pokerBalances = (h.pokerSettlement && h.pokerSettlement.balances) ? h.pokerSettlement.balances : [];
+    const pokerTxs = (h.pokerSettlement && h.pokerSettlement.transactions) ? h.pokerSettlement.transactions : [];
+    const expenseTxs = (h.expenseSettlement && h.expenseSettlement.transactions) ? h.expenseSettlement.transactions : [];
 
     return `
-      <div class="glass-card rounded-2xl p-4 space-y-3 shadow-lg border border-white/10">
+      <div class="glass-card rounded-2xl p-4 space-y-3.5 shadow-lg border border-white/10">
         <div class="flex justify-between items-start border-b border-white/10 pb-2.5">
           <div>
             <div class="flex items-center gap-2">
@@ -705,24 +659,21 @@ function renderDetailedHistory(history) {
             <span class="text-[10px] text-slate-400 font-mono block mt-0.5">${h.closedAt}</span>
           </div>
           <div class="text-right">
-            <span class="text-[10px] text-slate-400 block font-mono">Pot: <b class="text-emerald-400 font-mono">₹${h.totalPot}</b></span>
-            <span class="text-[10px] text-slate-400 block font-mono">Kharcha: <b class="text-indigo-400 font-mono">₹${h.totalExpenses}</b></span>
+            <span class="text-[10px] text-slate-400 block font-mono">Poker Pot: <b class="text-emerald-400 font-mono">₹${h.totalPot}</b></span>
+            <span class="text-[10px] text-slate-400 block font-mono">Party Kharcha: <b class="text-indigo-400 font-mono">₹${h.totalExpenses}</b></span>
           </div>
         </div>
 
+        <!-- 1. Pure Poker Results -->
         <div class="space-y-1.5">
-          <div class="text-[11px] font-bold text-slate-200 uppercase tracking-wider flex items-center justify-between">
-            <span>Har Khiladi Ka Win / Loss:</span>
-            <span class="text-[10px] text-slate-400 font-normal">Final Net Balance</span>
-          </div>
-          
+          <div class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">♠️ Poker Table Results (Win / Loss):</div>
           <div class="bg-gray-950 rounded-xl border border-white/10 overflow-hidden divide-y divide-white/5">
-            ${balances.map(b => {
-              const isWin = b.finalNet > 0;
-              const isLoss = b.finalNet < 0;
+            ${pokerBalances.map(b => {
+              const isWin = b.pokerNet > 0;
+              const isLoss = b.pokerNet < 0;
               const colorClass = isWin ? 'text-emerald-400' : isLoss ? 'text-rose-400' : 'text-slate-400';
               const badgeClass = isWin ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800' : isLoss ? 'bg-rose-950/80 text-rose-300 border-rose-800' : 'bg-gray-900 text-slate-400 border-white/10';
-              const sign = b.finalNet > 0 ? '+' : '';
+              const sign = b.pokerNet > 0 ? '+' : '';
 
               return `
                 <div class="p-2.5 flex items-center justify-between text-xs">
@@ -738,7 +689,7 @@ function renderDetailedHistory(history) {
 
                   <div class="text-right">
                     <div class="font-mono font-black text-sm ${colorClass}">
-                      ${sign}₹${b.finalNet}
+                      ${sign}₹${b.pokerNet}
                     </div>
                     <span class="text-[9px] px-1.5 py-0.2 rounded border font-mono font-bold ${badgeClass}">
                       ${isWin ? 'WIN' : isLoss ? 'LOSS' : 'EVEN'}
@@ -750,25 +701,33 @@ function renderDetailedHistory(history) {
           </div>
         </div>
 
-        <div class="space-y-1.5 pt-1">
-          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payments:</div>
-          <div class="space-y-1">
-            ${(!h.settlement || h.settlement.transactions.length === 0) 
-              ? '<div class="text-[11px] text-slate-500 italic bg-gray-950 p-2 rounded-xl border border-white/10">Sabka hisaab barabar tha.</div>' 
-              : h.settlement.transactions.map(t => `
-                <div class="text-[11px] bg-gray-950/80 px-3 py-1.5 rounded-xl border border-white/10 flex justify-between items-center">
-                  <span><b class="text-rose-400">${t.from}</b> ➔ <b class="text-emerald-400">${t.to}</b></span>
-                  <span class="font-mono font-extrabold text-amber-300">₹${t.amount}</span>
-                </div>
-              `).join('')
-            }
-          </div>
+        <!-- Poker Payments -->
+        <div class="space-y-1 pt-1">
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Poker Payments:</div>
+          ${pokerTxs.length === 0 ? '<div class="text-[11px] text-slate-500 italic bg-gray-950 p-2 rounded-xl border border-white/10">Poker me koi payments pending nahi the.</div>' : pokerTxs.map(t => `
+            <div class="text-[11px] bg-gray-950/80 px-3 py-1.5 rounded-xl border border-white/10 flex justify-between items-center">
+              <span><b class="text-rose-400">${t.from}</b> ➔ <b class="text-emerald-400">${t.to}</b></span>
+              <span class="font-mono font-extrabold text-emerald-400">₹${t.amount}</span>
+            </div>
+          `).join('')}
+        </div>
+
+        <!-- 2. Pure Kharcha Payments -->
+        <div class="space-y-1 pt-2 border-t border-white/10">
+          <div class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">🧾 Kharcha / Bills Payments:</div>
+          ${expenseTxs.length === 0 ? '<div class="text-[11px] text-slate-500 italic bg-gray-950 p-2 rounded-xl border border-white/10">Kharchon ka hisaab barabar tha.</div>' : expenseTxs.map(t => `
+            <div class="text-[11px] bg-gray-950/80 px-3 py-1.5 rounded-xl border border-white/10 flex justify-between items-center">
+              <span><b class="text-rose-400">${t.from}</b> ➔ <b class="text-indigo-400">${t.to}</b></span>
+              <span class="font-mono font-extrabold text-indigo-300">₹${t.amount}</span>
+            </div>
+          `).join('')}
         </div>
 
       </div>
     `;
   }).join('');
 }
+
 
 function renderAdminUserManagement(users) {
   const container = document.getElementById('adminUserManagementList');

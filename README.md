@@ -1,19 +1,18 @@
-# ♠️ Poker Addaa Pro v11 (Red Chip 2000 + Separate Poker & Kharcha Settlement)
+# ♠️ Poker Addaa Pro v12 (100% Separated Kharcha & Poker Tabs)
 
-### 🌟 What's New in Version 11:
-1. **Red Color Chip Added with 2000 Points:**
-   - **🔴 Red Chip:** Configured with default **2,000 pts** (equals **₹1,000 cash** at the ₹0.50 rate).
-   - Complete custom token values:
-     - ⚪ White Chip: **1,000 pts** (₹500)
-     - 🔵 Blue Chip: **50 pts** (₹25)
-     - 🟢 Green Chip: **100 pts** (₹50)
-     - 🔴 Red Chip: **2,000 pts** (₹1,000)
-     - 🟣 Purple Shahi: **1,500 pts** (₹750)
-     - ⚫ Black VIP: **500 pts** (₹250)
-     - 🎲 Dice Token: **5,000 pts** (₹2,500)
-     - 🃏 Deck Token: **10,000 pts** (₹5,000)
-2. **Dedicated Separate Sections in Cashout / Final Hisaab:**
-   - **⚡ Combined Net:** Merges both poker and party expenses for a single, minimum-transfer settlement.
-   - **♠️ Sirf Poker:** Calculates who owes whom purely based on table chips, buy-ins, and rebuys.
-   - **🧾 Sirf Kharcha:** Calculates who owes whom purely based on shared expenses (food, drinks, hotel, cigarettes).
-3. **Web Push Notifications & Notch Safe-Area Protection.**
+### 🌟 What Has Been Done:
+1. **Kharcha Section Moved to Dedicated Kharcha Tab:**
+   - **`🧾 Kharcha` Tab:**
+     - Log shared expenses (Swiggy, Hotel, Drinks, Sutta).
+     - Full expense ledger list.
+     - **"Kharcha Settle Karo"** button.
+     - Pure Kharcha settlement (Who pays whom purely for party bills with direct UPI links).
+2. **Pure Poker Section in Cashout Tab (No Mixing):**
+   - **`💰 Cashout` Tab:**
+     - Count physical chips & props (White, Blue, Green, Red [2000], Purple, Black, Dice, Deck).
+     - **"Poker Hisaab Nikalo"** button.
+     - Pure Poker settlement (Who pays whom purely based on table chips, buy-ins, and rebuys).
+3. **No Unwanted Combination:**
+   - Poker winnings/losses are not mixed with dinner or hotel bills. Both run as independent ledgers.
+4. **Historical Records:**
+   - Saved sessions in `📜 Purana Hisaab` clearly show two separate tables: one for Poker results and one for Kharcha results.

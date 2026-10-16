@@ -1,7 +1,7 @@
 {
   "name": "poker-addaa-pro",
-  "version": "11.0.0",
-  "description": "Poker Addaa Pro - Red Chip (2000), Separate Poker and Kharcha Settlement Sections, Web Push & Clean Luxury UI",
+  "version": "12.0.0",
+  "description": "Poker Addaa Pro - 100% Separated Kharcha in Kharcha Tab and Pure Poker in Cashout Tab (No Combination)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

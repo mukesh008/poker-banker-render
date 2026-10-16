@@ -37,7 +37,7 @@ if (process.env.DATABASE_URL) {
 
 const pushSubscriptions = {};
 
-// EXACT Requested Chip & Prop Default Points (Red added with 2000 pts)
+// EXACT Requested Chip & Prop Default Points
 const DEFAULT_TOKENS = [
   { id: 'white', name: 'White Chip', category: 'chip', chipValue: 1000, colorHex: '#f8fafc', icon: '⚪' },
   { id: 'blue', name: 'Blue Chip', category: 'chip', chipValue: 50, colorHex: '#38bdf8', icon: '🔵' },
@@ -76,8 +76,9 @@ let state = {
     players: [],
     pendingRebuys: [],
     expenses: [],
-    auditLog: ['Mehfil shuru! High stakes poker addaa ready hai.'],
-    lastSettlement: null
+    auditLog: ['Mehfil shuru! Poker Table aur Kharcha ab 100% alag alag tabs me hain.'],
+    pokerSettlement: null,
+    expenseSettlement: null
   },
   gameHistory: []
 };
@@ -113,8 +114,7 @@ function recalculatePlayerCashouts() {
   });
 }
 
-// Greedy settlement solver helper
-function solveDebtGraph(balances, amountKey = 'net') {
+function solveDebtGraph(balances, amountKey) {
   let debtors = balances.filter(b => b[amountKey] < -0.01).map(b => ({ ...b, netVal: -b[amountKey] }));
   let creditors = balances.filter(b => b[amountKey] > 0.01).map(b => ({ ...b, netVal: b[amountKey] }));
 
@@ -156,30 +156,15 @@ function solveDebtGraph(balances, amountKey = 'net') {
   return transactions;
 }
 
-// Calculate Separate & Combined Settlements
-function calculateSeparateAndCombinedSettlements() {
+// 1. PURE POKER SETTLEMENT (Strictly chips & buy-ins only, Zero kharcha included)
+function calculatePurePokerSettlement() {
   const players = state.game.players;
-  const expenses = state.game.expenses;
-  const count = players.length;
-  if (count === 0) return { balances: [], pokerTransactions: [], expenseTransactions: [], combinedTransactions: [] };
+  if (players.length === 0) return { totalPot: 0, balances: [], transactions: [] };
 
-  const totalExpense = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
-  const fairShare = count > 0 ? (totalExpense / count) : 0;
-
-  const expensePaidMap = {};
-  players.forEach(p => { expensePaidMap[p.userId] = 0; });
-  expenses.forEach(e => {
-    if (expensePaidMap[e.payerId] !== undefined) {
-      expensePaidMap[e.payerId] += Number(e.amount);
-    }
-  });
+  const totalPot = players.reduce((s, p) => s + p.totalBuyInCash, 0);
 
   const balances = players.map(p => {
-    const pokerNet = Number(p.cashOutValue || 0) - Number(p.totalBuyInCash || 0);
-    const expensePaid = expensePaidMap[p.userId] || 0;
-    const expenseNet = expensePaid - fairShare;
-    const finalNet = Math.round((pokerNet + expenseNet) * 100) / 100;
-
+    const net = Number(p.cashOutValue || 0) - Number(p.totalBuyInCash || 0);
     return {
       userId: p.userId,
       name: p.name,
@@ -187,32 +172,64 @@ function calculateSeparateAndCombinedSettlements() {
       upiId: p.upiId,
       totalBuyInCash: p.totalBuyInCash,
       cashOutValue: p.cashOutValue || 0,
-      pokerNet: Math.round(pokerNet * 100) / 100,
-      expensePaid: Math.round(expensePaid * 100) / 100,
-      expenseNet: Math.round(expenseNet * 100) / 100,
-      finalNet: finalNet
+      pokerNet: Math.round(net * 100) / 100
     };
   });
 
-  // 1. Separate Poker Settlement (Sirf poker winnings aur losses ka lena-dena)
-  const pokerTransactions = solveDebtGraph(balances, 'pokerNet');
-
-  // 2. Separate Kharcha Settlement (Sirf food/hotel/party kharche ka lena-dena)
-  const expenseTransactions = solveDebtGraph(balances, 'expenseNet');
-
-  // 3. Combined / Net Settlement (Dono ko jod kar single final payment)
-  const combinedTransactions = solveDebtGraph(balances, 'finalNet');
+  const transactions = solveDebtGraph(balances, 'pokerNet');
 
   return {
-    totalPot: players.reduce((s, p) => s + p.totalBuyInCash, 0),
-    totalExpenses: totalExpense,
-    fairShare: Math.round(fairShare * 100) / 100,
+    totalPot,
     balances,
-    pokerTransactions,
-    expenseTransactions,
-    combinedTransactions,
-    transactions: combinedTransactions, // legacy support
-    closedAt: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+    transactions,
+    calculatedAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+  };
+}
+
+// 2. PURE KHARCHA SETTLEMENT (Strictly expenses & splitwise fair share only, Zero poker chips included)
+function calculatePureExpenseSettlement() {
+  const users = state.game.players.length > 0 ? state.game.players : state.users.filter(u => u.isApproved && !u.isDisabled);
+  const expenses = state.game.expenses;
+  const count = users.length;
+  if (count === 0 || expenses.length === 0) {
+    return { totalExpenses: 0, fairShare: 0, balances: [], transactions: [] };
+  }
+
+  const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount), 0);
+  const fairShare = Math.round((totalExpenses / count) * 100) / 100;
+
+  const expensePaidMap = {};
+  users.forEach(u => { expensePaidMap[u.userId || u.id] = 0; });
+  expenses.forEach(e => {
+    const uid = e.payerId;
+    if (expensePaidMap[uid] !== undefined) {
+      expensePaidMap[uid] += Number(e.amount);
+    }
+  });
+
+  const balances = users.map(u => {
+    const uid = u.userId || u.id;
+    const paid = expensePaidMap[uid] || 0;
+    const net = paid - fairShare;
+    return {
+      userId: uid,
+      name: u.name,
+      avatar: u.avatar,
+      upiId: u.upiId,
+      paidAmount: paid,
+      fairShare: fairShare,
+      expenseNet: Math.round(net * 100) / 100
+    };
+  });
+
+  const transactions = solveDebtGraph(balances, 'expenseNet');
+
+  return {
+    totalExpenses,
+    fairShare,
+    balances,
+    transactions,
+    calculatedAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
   };
 }
 
@@ -264,7 +281,7 @@ app.post('/api/auth/signup', (req, res) => {
   state.users.push(newUser);
   state.game.auditLog.unshift(`Naya Khiladi [${cleanName}] entry maang raha hai.`);
   io.emit('stateSync', getPublicState());
-  res.json({ message: 'Registration submit ho gaya! Admin approve karega tab login milega.' });
+  res.json({ message: 'Registration request submit ho gayi! Admin ke approval ke baad login ho jayega.' });
 });
 
 app.post('/api/auth/login', (req, res) => {
@@ -488,6 +505,7 @@ io.on('connection', (socket) => {
     io.emit('stateSync', getPublicState());
   });
 
+  // Add Expense
   socket.on('addExpense', ({ payerId, title, amount }) => {
     const user = state.users.find(u => u.id === Number(payerId));
     if (!user || !amount || amount <= 0) return;
@@ -504,14 +522,26 @@ io.on('connection', (socket) => {
 
     state.game.expenses.push(exp);
     state.game.auditLog.unshift(`🧾 Kharcha Log: [${user.name}] ne ₹${amount} kharch kiye "${exp.title}" par.`);
+    // Auto re-calculate expense settlement if active
+    state.game.expenseSettlement = calculatePureExpenseSettlement();
     io.emit('stateSync', getPublicState());
   });
 
+  // Delete Expense
   socket.on('deleteExpense', (expenseId) => {
     state.game.expenses = state.game.expenses.filter(e => e.id !== Number(expenseId));
+    state.game.expenseSettlement = calculatePureExpenseSettlement();
     io.emit('stateSync', getPublicState());
   });
 
+  // Calculate Kharcha Settlement specifically in Kharcha Tab
+  socket.on('calculateExpenseSettlement', () => {
+    state.game.expenseSettlement = calculatePureExpenseSettlement();
+    state.game.auditLog.unshift(`🧾 Kharchon ka hisaab calculate ho gaya: Kul ₹${state.game.expenseSettlement.totalExpenses}`);
+    io.emit('stateSync', getPublicState());
+  });
+
+  // Submit Cashout
   socket.on('submitCashout', ({ userId, chipCounts }) => {
     const player = state.game.players.find(p => p.userId === Number(userId));
     if (!player) return;
@@ -534,18 +564,22 @@ io.on('connection', (socket) => {
     io.emit('stateSync', getPublicState());
   });
 
-  // Calculates separate poker, separate kharcha, and combined settlements
-  socket.on('finalizeSettlement', () => {
-    const settlement = calculateSeparateAndCombinedSettlements();
+  // Calculates strictly PURE POKER settlement in Cashout Tab
+  socket.on('finalizePokerSettlement', () => {
+    const settlement = calculatePurePokerSettlement();
     state.game.status = 'SETTLED';
-    state.game.lastSettlement = settlement;
-    state.game.auditLog.unshift(`🏁 HISAAB TAYAAR: Poker Pot: ₹${settlement.totalPot}, Party Kharcha: ₹${settlement.totalExpenses}.`);
+    state.game.pokerSettlement = settlement;
+    state.game.auditLog.unshift(`🏁 POKER HISAAB TAYAAR: Pot: ₹${settlement.totalPot}. Pure Poker Game ke lena-dena instructions ready.`);
     io.emit('stateSync', getPublicState());
   });
 
+  // Archive & Close Session
   socket.on('closeAndArchiveGame', () => {
-    if (!state.game.lastSettlement) {
-      state.game.lastSettlement = calculateSeparateAndCombinedSettlements();
+    if (!state.game.pokerSettlement) {
+      state.game.pokerSettlement = calculatePurePokerSettlement();
+    }
+    if (!state.game.expenseSettlement) {
+      state.game.expenseSettlement = calculatePureExpenseSettlement();
     }
 
     const archiveEntry = {
@@ -553,10 +587,10 @@ io.on('connection', (socket) => {
       roomCode: state.game.roomCode,
       closedAt: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
       bankerName: state.game.bankerName,
-      totalPot: state.game.lastSettlement.totalPot,
-      totalExpenses: state.game.lastSettlement.totalExpenses,
-      fairShare: state.game.lastSettlement.fairShare,
-      settlement: state.game.lastSettlement,
+      totalPot: state.game.pokerSettlement.totalPot,
+      totalExpenses: state.game.expenseSettlement.totalExpenses,
+      pokerSettlement: state.game.pokerSettlement,
+      expenseSettlement: state.game.expenseSettlement,
       playersCount: state.game.players.length
     };
 
@@ -576,7 +610,8 @@ io.on('connection', (socket) => {
       pendingRebuys: [],
       expenses: [],
       auditLog: [`Pichla game archive ho gaya. Naya addaa [${state.game.roomCode}] ready hai.`],
-      lastSettlement: null
+      pokerSettlement: null,
+      expenseSettlement: null
     };
 
     io.emit('stateSync', getPublicState());
@@ -598,5 +633,5 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`♠️ Poker Addaa running on port ${PORT}`);
+  console.log(`♠️ Poker Addaa with fully separated Kharcha & Poker tabs running on port ${PORT}`);
 });
