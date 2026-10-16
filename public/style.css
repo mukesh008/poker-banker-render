@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* iOS & Android Notch / Dynamic Island / Status Bar Protection */
 :root {
   --sat: env(safe-area-inset-top, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
@@ -12,17 +11,20 @@
 
 html, body {
   min-height: 100%;
-  background-color: #020617;
+  background-color: #030712;
+  color: #f8fafc;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  /* Extra bottom padding to account for fixed bottom navigation bar + home indicator */
-  padding-bottom: calc(5.5rem + max(0.5rem, env(safe-area-inset-bottom, 0px)));
+  /* Extra bottom padding to clear bottom navigation bar with home indicator */
+  padding-bottom: calc(5.8rem + max(0.5rem, env(safe-area-inset-bottom, 0px)));
 }
 
-/* Header safe padding: pushed down below iPhone Notch, Dynamic Island, Battery, Clock & Wi-Fi icons */
-header.shahi-header {
-  padding-top: max(1rem, calc(env(safe-area-inset-top, 0px) + 0.5rem)) !important;
+/* Header safe padding: Pushes content cleanly down below iPhone Notch / Dynamic Island / Android status bar */
+header.app-header {
+  padding-top: max(1rem, calc(env(safe-area-inset-top, 0px) + 0.6rem)) !important;
   padding-left: max(1rem, env(safe-area-inset-left, 0px));
   padding-right: max(1rem, env(safe-area-inset-right, 0px));
 }
@@ -32,18 +34,30 @@ nav#bottomNav {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px)) !important;
 }
 
+/* Premium Card Glassmorphism */
+.glass-card {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gold-glow {
+  box-shadow: 0 0 20px -5px rgba(245, 158, 11, 0.3);
+}
+
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
 }
 ::-webkit-scrollbar-track {
-  background: #020617;
+  background: #030712;
 }
 ::-webkit-scrollbar-thumb {
   background: #1e293b;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #d97706;
+  background: #f59e0b;
 }

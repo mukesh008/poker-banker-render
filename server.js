@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const bcrypt = require('bcryptjs');
 const path = require('path');
 const { Pool } = require('pg');
+const webpush = require('web-push');
 
 const app = express();
 const server = http.createServer(app);
@@ -12,6 +13,19 @@ const io = new Server(server, { cors: { origin: '*' } });
 const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Web Push VAPID Configuration
+// Auto-generate or use environment keys for production
+const vapidKeys = {
+  publicKey: process.env.VAPID_PUBLIC_KEY || 'BFsL7n6gTfC3w43_m42Y7d598XJ8vFzW01qP3E_6l5tE1yZ4a41Y_X4oW7bT3mG5oX7A3rW2yE8mZ4oT5aW1bC8',
+  privateKey: process.env.VAPID_PRIVATE_KEY || 'N2145kM6gH3_F27p1X4w8Z_B5aV7c3yL9mX1bQ4rE0s'
+};
+
+webpush.setVapidDetails(
+  'mailto:banker@pokeraddaa.local',
+  vapidKeys.publicKey,
+  vapidKeys.privateKey
+);
 
 let pool = null;
 if (process.env.DATABASE_URL) {
@@ -22,15 +36,19 @@ if (process.env.DATABASE_URL) {
   console.log('PostgreSQL Connected via DATABASE_URL');
 }
 
+// In-Memory Push Subscriptions registry
+// Map userId -> array of subscriptions (phone, laptop, iPad)
+const pushSubscriptions = {};
+
+// EXACT Requested Chip & Prop Default Points
 const DEFAULT_TOKENS = [
-  { id: 'white', name: 'White Chip', category: 'chip', chipValue: 10, colorHex: '#f8fafc', icon: '⚪' },
-  { id: 'red', name: 'Red Chip', category: 'chip', chipValue: 25, colorHex: '#ef4444', icon: '🔴' },
-  { id: 'blue', name: 'Blue Chip', category: 'chip', chipValue: 50, colorHex: '#3b82f6', icon: '🔵' },
-  { id: 'green', name: 'Green Chip', category: 'chip', chipValue: 100, colorHex: '#22c55e', icon: '🟢' },
-  { id: 'purple', name: 'Purple Shahi', category: 'chip', chipValue: 250, colorHex: '#a855f7', icon: '🟣' },
-  { id: 'black', name: 'Black VIP', category: 'chip', chipValue: 500, colorHex: '#0f172a', icon: '⚫' },
-  { id: 'dice', name: 'Dice Token', category: 'special', chipValue: 1000, colorHex: '#f59e0b', icon: '🎲' },
-  { id: 'deck', name: 'Deck Token', category: 'special', chipValue: 2500, colorHex: '#ec4899', icon: '🃏' }
+  { id: 'white', name: 'White Chip', category: 'chip', chipValue: 1000, colorHex: '#f8fafc', icon: '⚪' },
+  { id: 'blue', name: 'Blue Chip', category: 'chip', chipValue: 50, colorHex: '#38bdf8', icon: '🔵' },
+  { id: 'green', name: 'Green Chip', category: 'chip', chipValue: 100, colorHex: '#34d399', icon: '🟢' },
+  { id: 'purple', name: 'Purple Shahi', category: 'chip', chipValue: 1500, colorHex: '#c084fc', icon: '🟣' },
+  { id: 'black', name: 'Black VIP', category: 'chip', chipValue: 500, colorHex: '#94a3b8', icon: '⚫' },
+  { id: 'dice', name: 'Dice Token', category: 'special', chipValue: 5000, colorHex: '#fbbf24', icon: '🎲' },
+  { id: 'deck', name: 'Deck Token', category: 'special', chipValue: 10000, colorHex: '#f472b6', icon: '🃏' }
 ];
 
 let state = {
@@ -60,11 +78,30 @@ let state = {
     players: [],
     pendingRebuys: [],
     expenses: [],
-    auditLog: ['Aadaab bhai log! Mehfil shuru ho chuki hai. Cards uthao aur thoda tehzeeb se bluff maaro.'],
+    auditLog: ['Mehfil shuru! High stakes poker addaa ready hai with Push Notifications.'],
     lastSettlement: null
   },
   gameHistory: []
 };
+
+// Push Notification Helper
+async function sendPushToUser(userId, payload) {
+  const subs = pushSubscriptions[userId] || [];
+  const stringPayload = JSON.stringify(payload);
+
+  for (let i = subs.length - 1; i >= 0; i--) {
+    const sub = subs[i];
+    try {
+      await webpush.sendNotification(sub, stringPayload);
+    } catch (err) {
+      console.log(`Push failed for user ${userId}, status: ${err.statusCode}`);
+      // Remove invalid/expired push endpoint
+      if (err.statusCode === 404 || err.statusCode === 410) {
+        subs.splice(i, 1);
+      }
+    }
+  }
+}
 
 function recalculatePlayerCashouts() {
   state.game.players.forEach(p => {
@@ -166,15 +203,40 @@ function calculateUnifiedSettlement() {
   };
 }
 
-// REST APIs
+// Public VAPID Key Endpoint
+app.get('/api/push/vapid-key', (req, res) => {
+  res.json({ publicKey: vapidKeys.publicKey });
+});
+
+// Subscribe user device to Push Notifications
+app.post('/api/push/subscribe', (req, res) => {
+  const { userId, subscription } = req.body;
+  if (!userId || !subscription) {
+    return res.status(400).json({ error: 'Missing userId or subscription' });
+  }
+
+  if (!pushSubscriptions[userId]) {
+    pushSubscriptions[userId] = [];
+  }
+
+  // Avoid duplicates
+  const exists = pushSubscriptions[userId].some(s => s.endpoint === subscription.endpoint);
+  if (!exists) {
+    pushSubscriptions[userId].push(subscription);
+  }
+
+  res.json({ success: true, message: 'Push notification subscription registered!' });
+});
+
+// REST APIs for Auth
 app.post('/api/auth/signup', (req, res) => {
   const { name, pin, upiId, avatar } = req.body;
   if (!name || !pin || pin.length !== 4) {
-    return res.status(400).json({ error: 'Arey janaab! Apna naam aur 4-digit PIN daalna zaroori hai.' });
+    return res.status(400).json({ error: 'Naam aur 4-digit PIN daalna zaroori hai!' });
   }
   const cleanName = name.trim();
   if (state.users.some(u => u.name.toLowerCase() === cleanName.toLowerCase())) {
-    return res.status(400).json({ error: 'Ye naam pehle se kisi aur khiladi ne le rakha hai, doosra try karo.' });
+    return res.status(400).json({ error: 'Ye naam pehle se kisi aur khiladi ka hai. Doosra try karo!' });
   }
 
   const newUser = {
@@ -190,24 +252,24 @@ app.post('/api/auth/signup', (req, res) => {
   };
 
   state.users.push(newUser);
-  state.game.auditLog.unshift(`Naya Khiladi [${cleanName}] entry maang raha hai. Admin bhai zara approve kar do!`);
+  state.game.auditLog.unshift(`Naya Khiladi [${cleanName}] entry maang raha hai. Admin approval pending.`);
   io.emit('stateSync', getPublicState());
-  res.json({ message: 'Aapki entry request send ho gayi hai. Admin sahab approve karenge tab entry milegi.' });
+  res.json({ message: 'Registration request submit ho gayi! Admin ke approval ke baad login ho jayega.' });
 });
 
 app.post('/api/auth/login', (req, res) => {
   const { userId, pin } = req.body;
   const user = state.users.find(u => u.id === Number(userId));
-  if (!user) return res.status(404).json({ error: 'Khiladi mila nahi list me bhai!' });
+  if (!user) return res.status(404).json({ error: 'Khiladi mila nahi list me!' });
   if (user.isDisabled) {
-    return res.status(403).json({ error: 'Maaf kijiye janaab, Admin ne aapko temporary block kiya hua hai!' });
+    return res.status(403).json({ error: 'Admin ne aapko temporary block kiya hua hai!' });
   }
   if (!user.isApproved && !user.isAdmin) {
-    return res.status(403).json({ error: 'Thoda sabr kijiye huzoor! Admin ne abhi tak approve nahi kiya.' });
+    return res.status(403).json({ error: 'Zara ruko bhai! Admin ne abhi approve nahi kiya.' });
   }
 
   const match = bcrypt.compareSync(pin, user.pinHash);
-  if (!match) return res.status(401).json({ error: 'Galat PIN daal rahe ho huzoor, dhyan se type karo!' });
+  if (!match) return res.status(401).json({ error: 'Galat PIN! Dhyan se 4-digit PIN daalo.' });
 
   res.json({
     user: {
@@ -254,7 +316,7 @@ io.on('connection', (socket) => {
     if (user) {
       user.isApproved = true;
       user.isDisabled = false;
-      state.game.auditLog.unshift(`Aadaab! [${user.name}] ko table me entry de di gayi hai.`);
+      state.game.auditLog.unshift(`Aadaab! [${user.name}] ko table me entry mil gayi.`);
       io.emit('stateSync', getPublicState());
     }
   });
@@ -264,7 +326,7 @@ io.on('connection', (socket) => {
     if (user && !user.isAdmin) {
       user.isDisabled = !user.isDisabled;
       const act = user.isDisabled ? 'DISABLE' : 'ENABLE';
-      state.game.auditLog.unshift(`⚠️ Admin ne [${user.name}] ko ${act} kar diya hai.`);
+      state.game.auditLog.unshift(`⚠️ Admin ne [${user.name}] ko ${act} kar diya.`);
       io.emit('stateSync', getPublicState());
     }
   });
@@ -274,7 +336,8 @@ io.on('connection', (socket) => {
     if (user && !user.isAdmin) {
       state.users = state.users.filter(u => u.id !== Number(userId));
       state.game.players = state.game.players.filter(p => p.userId !== Number(userId));
-      state.game.auditLog.unshift(`[${user.name}] ko table se hamesha ke liye hata diya gaya.`);
+      delete pushSubscriptions[userId];
+      state.game.auditLog.unshift(`[${user.name}] ko list se delete kar diya gaya.`);
       io.emit('stateSync', getPublicState());
     }
   });
@@ -286,8 +349,15 @@ io.on('connection', (socket) => {
       user.isBanker = true;
       state.game.bankerUserId = user.id;
       state.game.bankerName = user.name;
-      state.game.auditLog.unshift(`👑 NAYA BANKER: [${user.name}] ab se tijori sambhalenge. Saara hisaab inke paas!`);
+      state.game.auditLog.unshift(`👑 NAYA BANKER: [${user.name}] ab se tijori sambhalenge!`);
       io.emit('stateSync', getPublicState());
+
+      // Notify the new Banker
+      sendPushToUser(user.id, {
+        title: '👑 Aap Bane Naye Banker!',
+        body: 'Aapko table ka Khazanchi (Banker) bana diya gaya hai. Saara hisaab ab aapke haath me hai!',
+        icon: '/icons/icon-192.png'
+      });
     }
   });
 
@@ -303,7 +373,7 @@ io.on('connection', (socket) => {
     }
     recalculatePlayerCashouts();
 
-    state.game.auditLog.unshift(`⚙️ Table Rules Update: ₹${cash} = ${chips} chips (Rate: ₹${state.game.ratePerChip}/pt)`);
+    state.game.auditLog.unshift(`⚙️ Rules Update: ₹${cash} = ${chips} chips (Rate: ₹${state.game.ratePerChip}/pt)`);
     io.emit('stateSync', getPublicState());
   });
 
@@ -329,10 +399,11 @@ io.on('connection', (socket) => {
       hasCashedOut: false
     });
 
-    state.game.auditLog.unshift(`${user.avatar} [${user.name}] ne seat le li! Buy-in: ₹${initialCash} (${initialChips} chips)`);
+    state.game.auditLog.unshift(`${user.avatar} [${user.name}] ne seat li! Buy-in: ₹${initialCash} (${initialChips} chips)`);
     io.emit('stateSync', getPublicState());
   });
 
+  // Rebuy requested: Triggers Push Notification directly to Banker and Admin phones!
   socket.on('requestRebuy', ({ userId, multiplier }) => {
     const player = state.game.players.find(p => p.userId === Number(userId));
     if (!player) return;
@@ -351,8 +422,28 @@ io.on('connection', (socket) => {
     };
 
     state.game.pendingRebuys.push(req);
-    state.game.auditLog.unshift(`💸 [${player.name}] ne Rebuy maanga: ₹${cash} (${chips} pts). Banker sahab approve karo!`);
+    state.game.auditLog.unshift(`💸 [${player.name}] ne Rebuy maanga: ₹${cash} (${chips} pts). Banker approve karein.`);
     io.emit('stateSync', getPublicState());
+
+    // SEND IMMEDIATE WEB PUSH NOTIFICATION TO BANKER & ADMIN PHONES
+    const pushPayload = {
+      title: `🔔 Rebuy Request: ${player.name}`,
+      body: `${player.name} ne ₹${cash} (${chips} chips) maange hain. Table pe jakar approve karein!`,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/favicon-32x32.png',
+      tag: 'poker-rebuy-request',
+      vibrate: [200, 100, 200],
+      data: { url: '/' }
+    };
+
+    // Send to current Banker
+    if (state.game.bankerUserId) {
+      sendPushToUser(state.game.bankerUserId, pushPayload);
+    }
+    // Also send to all Admins (if different from Banker)
+    state.users.filter(u => u.isAdmin && u.id !== state.game.bankerUserId).forEach(admin => {
+      sendPushToUser(admin.id, pushPayload);
+    });
   });
 
   socket.on('approveRebuy', (requestId) => {
@@ -365,6 +456,13 @@ io.on('connection', (socket) => {
       player.totalBuyInCash += req.amountCash;
       player.totalChipsIssued += req.amountChips;
       state.game.auditLog.unshift(`✓ Banker ne [${player.name}] ka rebuy de diya: +₹${req.amountCash} (+${req.amountChips} pts)`);
+
+      // Notify the requesting player that Rebuy was Approved!
+      sendPushToUser(player.userId, {
+        title: '✅ Rebuy Manzoor!',
+        body: `Banker ne aapka ₹${req.amountCash} (+${req.amountChips} chips) ka rebuy approve kar diya. Khel aage badhao!`,
+        icon: '/icons/icon-192.png'
+      });
     }
     state.game.pendingRebuys.splice(idx, 1);
     io.emit('stateSync', getPublicState());
@@ -374,7 +472,15 @@ io.on('connection', (socket) => {
     const idx = state.game.pendingRebuys.findIndex(r => r.requestId === requestId);
     if (idx === -1) return;
     const req = state.game.pendingRebuys[idx];
-    state.game.auditLog.unshift(`✕ Banker ne [${req.name}] ka rebuy reject kiya: "Pehle pichla hisaab clear karo janaab!"`);
+    state.game.auditLog.unshift(`✕ Banker ne [${req.name}] ka rebuy reject kiya.`);
+
+    // Notify the player of rejection
+    sendPushToUser(req.userId, {
+      title: '✕ Rebuy Reject Hua',
+      body: `Banker ne aapka ₹${req.amountCash} ka rebuy reject kar diya. Banker se baat karo!`,
+      icon: '/icons/icon-192.png'
+    });
+
     state.game.pendingRebuys.splice(idx, 1);
     io.emit('stateSync', getPublicState());
   });
@@ -388,13 +494,13 @@ io.on('connection', (socket) => {
       payerId: user.id,
       payerName: user.name,
       avatar: user.avatar,
-      title: title || 'Party Kharcha',
+      title: title || 'Kharcha',
       amount: Number(amount),
       time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
     };
 
     state.game.expenses.push(exp);
-    state.game.auditLog.unshift(`🧾 Kharcha Log: [${user.name}] ne ₹${amount} kharch kiye "${exp.title}" pe. Sabme barabar batega.`);
+    state.game.auditLog.unshift(`🧾 Kharcha Log: [${user.name}] ne ₹${amount} kharch kiye "${exp.title}" par.`);
     io.emit('stateSync', getPublicState());
   });
 
@@ -429,7 +535,7 @@ io.on('connection', (socket) => {
     const settlement = calculateUnifiedSettlement();
     state.game.status = 'SETTLED';
     state.game.lastSettlement = settlement;
-    state.game.auditLog.unshift(`🏁 HISAAB TAYAAR: Total Pot: ₹${settlement.totalPot}, Total Kharcha: ₹${settlement.totalExpenses}. Check kar lo kaun kisko kitna dega!`);
+    state.game.auditLog.unshift(`🏁 HISAAB TAYAAR: Pot: ₹${settlement.totalPot}, Kharcha: ₹${settlement.totalExpenses}.`);
     io.emit('stateSync', getPublicState());
   });
 
@@ -465,7 +571,7 @@ io.on('connection', (socket) => {
       players: [],
       pendingRebuys: [],
       expenses: [],
-      auditLog: [`Pichla game finalize aur save ho gaya. Naya addaa [${state.game.roomCode}] ready hai bhai log!`],
+      auditLog: [`Pichla game successfully archive ho gaya! Naya addaa [${state.game.roomCode}] ready hai.`],
       lastSettlement: null
     };
 
@@ -488,5 +594,5 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`♠️ Hinglish Poker Addaa running on port ${PORT}`);
+  console.log(`♠️ Poker Addaa with Push Notifications running on port ${PORT}`);
 });

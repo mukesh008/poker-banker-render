@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: poker-addaa-hinglish
+    name: poker-addaa-pro
     env: node
     plan: free
     buildCommand: npm install

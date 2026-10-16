@@ -1,12 +1,12 @@
 {
   "name": "Poker Addaa Pro",
   "short_name": "PokerAddaa",
-  "description": "Desi Hinglish Poker Ledger with subtle Lucknow swag",
+  "description": "Professional Desi Poker Night Ledger & Unified Expense Settler",
   "start_url": "/",
   "id": "/",
   "display": "standalone",
-  "background_color": "#020617",
-  "theme_color": "#020617",
+  "background_color": "#030712",
+  "theme_color": "#030712",
   "orientation": "portrait",
   "icons": [
     {

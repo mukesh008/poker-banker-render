@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     is_admin BOOLEAN DEFAULT FALSE,
     is_approved BOOLEAN DEFAULT FALSE,
     is_disabled BOOLEAN DEFAULT FALSE,
+    push_subscription JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

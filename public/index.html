@@ -1,61 +1,71 @@
 <!DOCTYPE html>
-<html lang="hi" class="dark">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#020617" />
+  <meta name="theme-color" content="#030712" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Poker Addaa" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
   <link rel="manifest" href="/manifest.json" />
-  <title>Poker Addaa ♠️ Friday Night High Stakes</title>
+  <title>Poker Addaa Pro ♠️ High Stakes Club</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="/socket.io/socket.io.js"></script>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-amber-500 selection:text-black pb-24">
+<body class="bg-gray-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-amber-500 selection:text-black">
 
-  <!-- Notch Protected Header -->
-  <header class="shahi-header bg-slate-900/95 backdrop-blur-md border-b border-amber-600/30 sticky top-0 z-40 px-4 pb-3 shadow-2xl">
-    <div class="max-w-2xl mx-auto flex items-center justify-between">
+  <!-- Notch & Status Bar Protected Header -->
+  <header class="app-header bg-gray-950/90 backdrop-blur-xl border-b border-white/10 sticky top-0 z-40 px-4 pb-3.5 shadow-xl">
+    <div class="max-w-2xl mx-auto flex items-center justify-between gap-2">
       
       <!-- Logo + Room Title -->
-      <div class="flex items-center gap-2.5">
-        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-600 via-yellow-400 to-amber-200 p-0.5 shadow-lg shadow-amber-950/70 flex-shrink-0">
-          <div class="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-xl">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 via-amber-400 to-yellow-200 p-0.5 shadow-md shadow-amber-950/60 flex-shrink-0">
+          <div class="w-full h-full bg-gray-950 rounded-[10px] flex items-center justify-center text-xl">
             ♠️
           </div>
         </div>
-        <div>
-          <div class="flex items-center gap-1.5">
-            <h1 class="text-sm font-black tracking-tight text-amber-300 uppercase">Poker Addaa</h1>
-            <span class="text-[9px] bg-amber-500/10 text-amber-400 border border-amber-500/30 px-1.5 py-0.2 rounded-full font-mono font-bold">LUCKNOW SWAG</span>
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <h1 class="text-sm font-black tracking-tight text-white uppercase truncate">Poker Addaa</h1>
+            <span class="text-[9px] bg-amber-500/15 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded-full font-mono font-bold tracking-wider uppercase">
+              Lucknow Swag
+            </span>
           </div>
-          <p id="roomCodeDisplay" class="text-[10px] text-slate-400 font-mono">ROOM: ...</p>
+          <p id="roomCodeDisplay" class="text-[10px] text-slate-400 font-mono mt-0.5">ROOM: ...</p>
         </div>
       </div>
 
-      <!-- Install App + User Profile -->
-      <div class="flex items-center gap-2">
-        <button onclick="toggleInstallGuide(true)" class="flex items-center gap-1 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-950 font-black text-[11px] px-2.5 py-1.5 rounded-xl shadow-lg shadow-amber-950/50 active:scale-95 transition">
-          <span>📲</span> <span class="hidden xs:inline">App Lagao</span><span class="xs:hidden">Install</span>
+      <!-- Action Items: Install + Profile + Clean Exit Button -->
+      <div class="flex items-center gap-1.5 flex-shrink-0">
+        
+        <button id="notifBellBtn" onclick="requestPushPermission()" class="flex items-center gap-1 bg-slate-900 border border-white/10 hover:border-amber-500/40 text-amber-400 font-bold text-[11px] px-2 py-1.5 rounded-lg shadow-sm transition active:scale-95" title="Push Notification Enable Karein">
+          <span id="notifBellIcon">🔔</span>
+        </button>
+
+        <button onclick="toggleInstallGuide(true)" class="flex items-center gap-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-gray-950 font-black text-[11px] px-2.5 py-1.5 rounded-lg shadow-md active:scale-95 transition">
+          <span>📲</span> <span class="hidden sm:inline">Install</span>
         </button>
 
         <div id="currentUserBadge" class="hidden items-center gap-1.5">
-          <button onclick="toggleProfileModal(true)" class="flex items-center gap-1.5 bg-slate-800/90 border border-slate-700 px-2 py-1 rounded-xl">
-            <span id="headerAvatar" class="text-base">👑</span>
-            <div class="text-left">
-              <div id="loggedUserName" class="text-[11px] font-bold text-slate-200 leading-none truncate max-w-[80px]">Nawab</div>
-              <span id="roleBadge" class="text-[9px] text-amber-400 font-mono block leading-tight">KHILADI</span>
+          <button onclick="toggleProfileModal(true)" class="flex items-center gap-1.5 bg-slate-900 border border-white/10 px-2 py-1.5 rounded-lg hover:border-amber-500/40 transition">
+            <span id="headerAvatar" class="text-base leading-none">👑</span>
+            <div class="text-left hidden xs:block">
+              <div id="loggedUserName" class="text-[11px] font-bold text-slate-100 leading-none truncate max-w-[70px]">Player</div>
+              <span id="roleBadge" class="text-[8px] text-amber-400 font-mono block leading-tight font-bold">KHILADI</span>
             </div>
           </button>
-          <button onclick="logout()" class="text-xs text-rose-400 hover:text-rose-300 bg-rose-950/40 border border-rose-800/40 px-2 py-1 rounded-xl">
+          
+          <!-- Clean & Professional Exit Button -->
+          <button onclick="logout()" class="text-xs font-bold text-rose-300 hover:text-white bg-rose-950/50 hover:bg-rose-900 border border-rose-800/60 px-2.5 py-1.5 rounded-lg transition active:scale-95" title="Exit / Logout">
             Exit
           </button>
         </div>
       </div>
+
     </div>
   </header>
 
@@ -63,21 +73,21 @@
   <main class="flex-1 max-w-2xl w-full mx-auto p-3.5 space-y-4">
 
     <!-- Screen 1: Auth Screen -->
-    <section id="authSection" class="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-600/30 rounded-3xl p-5 shadow-2xl space-y-5">
+    <section id="authSection" class="glass-card rounded-3xl p-5 shadow-2xl space-y-5 border border-white/10">
       
       <div class="text-center space-y-1">
-        <div class="inline-block px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-full text-[11px] font-semibold text-amber-300 font-mono">
+        <div class="inline-block px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-full text-[11px] font-semibold text-amber-400 font-mono">
           🌸 Muskuraiye, Aap Lucknow Ke Poker Addaa Par Hain
         </div>
-        <h2 class="text-2xl font-black text-slate-100 tracking-tight">Aadaab Bhai Log! Welcome</h2>
+        <h2 class="text-2xl font-black text-white tracking-tight">Aadaab Bhai Log! Welcome</h2>
         <p class="text-xs text-slate-400">Apna naam select karo aur 4-digit PIN daal ke table pe aao.</p>
       </div>
 
-      <!-- Savage / Naughty Poker Quote Card (FULL TEXT, NO TRUNCATION) -->
-      <div class="bg-slate-950 border border-amber-500/30 rounded-2xl p-4 relative overflow-hidden shadow-inner space-y-2">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+      <!-- Adult & Naughty Poker Joke Card (Full readable text) -->
+      <div class="bg-gray-950/80 border border-amber-500/25 rounded-2xl p-4 shadow-inner space-y-2">
+        <div class="flex items-center justify-between border-b border-white/10 pb-1.5">
           <span class="text-[11px] font-bold text-amber-400 tracking-wider flex items-center gap-1">
-            <span>🔞</span> Poker Gyaan & Naughty Banter:
+            <span>🔞</span> Poker Gyaan & Adult Humor:
           </span>
           <button onclick="nextRandomQuote()" class="text-[10px] text-amber-300 font-mono underline hover:text-white">
             Doosra Gyaan ➔
@@ -89,20 +99,20 @@
       </div>
 
       <!-- Quick Login Form -->
-      <div class="space-y-3.5 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+      <div class="space-y-3.5 bg-gray-900/60 p-4 rounded-2xl border border-white/10">
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1">Apna Naam Select Karo</label>
-          <select id="loginUserSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 font-medium focus:outline-none focus:border-amber-500">
+          <select id="loginUserSelect" class="w-full bg-gray-900 border border-white/15 rounded-xl px-3.5 py-2.5 text-sm text-white font-medium focus:outline-none focus:border-amber-500">
             <option value="">-- Apna Naam Select Karo --</option>
           </select>
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1">Secret 4-Digit PIN</label>
-          <input type="password" id="loginPin" maxlength="4" placeholder="••••" inputmode="numeric" class="w-full text-center tracking-[0.6em] text-xl font-mono bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-amber-500" />
+          <input type="password" id="loginPin" maxlength="4" placeholder="••••" inputmode="numeric" class="w-full text-center tracking-[0.6em] text-xl font-mono bg-gray-900 border border-white/15 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500" />
         </div>
 
-        <button onclick="login()" class="w-full bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-950 font-black py-3 rounded-xl text-sm shadow-xl shadow-amber-950/60 active:scale-[0.98] transition">
+        <button onclick="login()" class="w-full bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-300 text-gray-950 font-black py-3 rounded-xl text-sm shadow-xl active:scale-[0.98] transition">
           Table Pe Entry Lo ♠️
         </button>
         <p id="authError" class="text-xs text-rose-400 text-center font-medium hidden"></p>
@@ -119,30 +129,31 @@
     <!-- Screen 2: Game Dashboard -->
     <div id="gameDashboard" class="hidden space-y-4">
 
-      <!-- Naughty / Savage Quote Strip -->
-      <div onclick="showQuoteModal()" class="cursor-pointer bg-gradient-to-r from-slate-900 via-amber-950/20 to-slate-900 border border-amber-600/30 p-2.5 rounded-2xl flex items-center justify-between text-xs text-slate-200 shadow">
+      <!-- Naughty / Adult Quote Strip -->
+      <div onclick="showQuoteModal()" class="cursor-pointer glass-card border border-amber-500/25 p-3 rounded-2xl flex items-center justify-between text-xs text-slate-200 shadow-md hover:border-amber-500/40 transition">
         <div class="flex items-center gap-2 overflow-hidden flex-1 mr-2">
           <span class="text-amber-400 text-sm">🔥</span>
           <span id="activeQuoteLine" class="text-[11px] italic font-medium leading-tight line-clamp-2">
-            "Poker aur sex me ek cheez common hai... bluff tabhi tak chalta hai jab tak samne wala check na kar le!"
+            "Poker aur sex me ek cheez common hai bhai... bluff tabhi tak chalta hai jab tak samne wala check na kar le!"
           </span>
         </div>
-        <span class="text-[9px] bg-slate-800 text-amber-300 px-2 py-1 rounded-lg border border-slate-700 whitespace-nowrap font-mono">
+        <span class="text-[9px] bg-amber-500/10 text-amber-300 border border-amber-500/25 px-2 py-1 rounded-lg font-mono font-bold whitespace-nowrap">
           Full Padho ↗
         </span>
       </div>
 
       <!-- Tab 1: Live Poker Table -->
       <section id="tableTab" class="space-y-3.5">
+        
         <!-- Live Table Stats Banner -->
-        <div class="grid grid-cols-3 gap-2 bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 p-3.5 rounded-2xl text-center shadow-lg">
+        <div class="grid grid-cols-3 gap-2 glass-card p-3.5 rounded-2xl text-center shadow-lg border border-white/10">
           <div>
             <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Total Pot</div>
-            <div id="statTotalPot" class="text-lg font-black text-emerald-400 font-mono">₹0</div>
+            <div id="statTotalPot" class="text-lg font-black text-emerald-400 font-mono mt-0.5">₹0</div>
           </div>
           <div>
             <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">1x Buy-in</div>
-            <div id="statBaseBuyin" class="text-lg font-black text-slate-100 font-mono">₹500</div>
+            <div id="statBaseBuyin" class="text-lg font-black text-slate-100 font-mono mt-0.5">₹500</div>
           </div>
           <div>
             <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Banker (Khazanchi)</div>
@@ -150,22 +161,24 @@
           </div>
         </div>
 
-        <!-- Token Reference Key -->
-        <div class="bg-slate-900 border border-slate-800 p-3 rounded-2xl space-y-2">
+        <!-- Token Reference Key: Clean Pills -->
+        <div class="glass-card p-3 rounded-2xl space-y-2 border border-white/10">
           <div class="flex items-center justify-between text-xs font-bold text-slate-300">
             <span>Chips & Prop Values</span>
-            <span class="text-[10px] text-amber-400/80 font-mono" id="chipRatioBadge">1 pt = ₹0.50</span>
+            <span class="text-[10px] text-amber-400 font-mono bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full" id="chipRatioBadge">
+              1 pt = ₹0.50
+            </span>
           </div>
           <div id="tokenReferenceBar" class="flex flex-wrap gap-1.5 text-[11px]"></div>
         </div>
 
         <!-- Spectator Banner -->
-        <div id="joinTableBanner" class="hidden bg-emerald-950/30 border border-emerald-700/60 p-3.5 rounded-2xl flex items-center justify-between shadow-lg">
+        <div id="joinTableBanner" class="hidden bg-emerald-950/40 border border-emerald-500/30 p-3.5 rounded-2xl flex items-center justify-between shadow-lg">
           <div>
             <div class="text-xs font-bold text-emerald-300">Aap abhi bahar baithe tamasha dekh rahe ho!</div>
             <div class="text-[11px] text-slate-400">Seat pakdo aur 1x Buy-in leke game me aao.</div>
           </div>
-          <button onclick="joinTable()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-3.5 py-2 rounded-xl shadow active:scale-95">
+          <button onclick="joinTable()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-3.5 py-2 rounded-xl shadow active:scale-95 transition">
             Seat Pakdo (₹500)
           </button>
         </div>
@@ -174,67 +187,67 @@
         <div id="bankerApprovalBox" class="hidden space-y-2">
           <div class="text-xs font-extrabold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
             <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
-            Rebuy Requests (Banker Sahab Approve Karo)
+            Rebuy Requests (Banker Approve Karein)
           </div>
           <div id="pendingRebuysList" class="space-y-2"></div>
         </div>
 
         <!-- Quick Rebuy Action for Seated Players -->
-        <div id="rebuyActionBox" class="hidden bg-slate-900 border border-slate-800 p-3.5 rounded-2xl space-y-2.5">
+        <div id="rebuyActionBox" class="hidden glass-card p-3.5 rounded-2xl space-y-2.5 border border-white/10">
           <div class="flex justify-between items-center">
             <span class="text-xs font-bold text-slate-200">Chips Khatam? Rebuy Maango</span>
-            <span class="text-[10px] text-slate-400">Banker verify karke chips dega</span>
+            <span class="text-[10px] text-slate-400 font-mono">Banker chips dega</span>
           </div>
           <div class="grid grid-cols-3 gap-2">
-            <button onclick="requestRebuy(0.5)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 py-2 rounded-xl text-xs font-semibold">
+            <button onclick="requestRebuy(0.5)" class="bg-gray-900 hover:bg-gray-800 border border-white/10 py-2 rounded-xl text-xs font-semibold text-slate-200 active:scale-95 transition">
               Half (0.5x)
             </button>
-            <button onclick="requestRebuy(1.0)" class="bg-amber-600 hover:bg-amber-500 text-slate-950 font-black py-2 rounded-xl text-xs shadow">
+            <button onclick="requestRebuy(1.0)" class="bg-amber-500 hover:bg-amber-400 text-gray-950 font-black py-2 rounded-xl text-xs shadow active:scale-95 transition">
               Full (1.0x)
             </button>
-            <button onclick="requestRebuy(2.0)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 py-2 rounded-xl text-xs font-semibold">
+            <button onclick="requestRebuy(2.0)" class="bg-gray-900 hover:bg-gray-800 border border-white/10 py-2 rounded-xl text-xs font-semibold text-slate-200 active:scale-95 transition">
               Double (2.0x)
             </button>
           </div>
         </div>
 
         <!-- Seated Players List -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow">
-          <div class="p-3 bg-slate-850 border-b border-slate-800 flex justify-between items-center text-xs font-bold">
+        <div class="glass-card rounded-2xl overflow-hidden shadow-lg border border-white/10">
+          <div class="p-3 bg-gray-900/80 border-b border-white/10 flex justify-between items-center text-xs font-bold">
             <span>Table Pe Baithe Khiladi</span>
             <span id="playerCountLabel" class="text-slate-400 font-mono">0 Playing</span>
           </div>
-          <div id="activePlayersList" class="divide-y divide-slate-800/80"></div>
+          <div id="activePlayersList" class="divide-y divide-white/5"></div>
         </div>
       </section>
 
       <!-- Tab 2: Shared Expenses -->
       <section id="expensesTab" class="hidden space-y-3.5">
-        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
+        <div class="glass-card p-4 rounded-2xl space-y-3 border border-white/10">
           <div class="text-xs font-bold text-slate-200 uppercase tracking-wider">Hotel, Daaru, Sutta, Ya Kabab Ka Kharcha Daalo</div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <input type="text" id="expenseTitle" placeholder="Kisme udaaye? (e.g. Swiggy, Sutta, Hotel)" class="bg-slate-800 border border-slate-700 px-3 py-2 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500" />
-            <input type="number" id="expenseAmount" placeholder="Kitna bill aaya? (₹)" class="bg-slate-800 border border-slate-700 px-3 py-2 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-amber-500" />
-            <button onclick="addExpense()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2 rounded-xl shadow">
+            <input type="text" id="expenseTitle" placeholder="Kisme udaaye? (e.g. Swiggy, Sutta, Hotel)" class="bg-gray-900 border border-white/15 px-3 py-2 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500" />
+            <input type="number" id="expenseAmount" placeholder="Kitna bill aaya? (₹)" class="bg-gray-900 border border-white/15 px-3 py-2 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-amber-500" />
+            <button onclick="addExpense()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2 rounded-xl shadow active:scale-95 transition">
               + Sabme Barabar Baanto
             </button>
           </div>
         </div>
 
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-          <div class="p-3 bg-slate-850 border-b border-slate-800 flex justify-between items-center text-xs font-bold">
+        <div class="glass-card rounded-2xl overflow-hidden border border-white/10">
+          <div class="p-3 bg-gray-900/80 border-b border-white/10 flex justify-between items-center text-xs font-bold">
             <span>Aaj Ke Kharchon Ki List</span>
             <span id="totalExpenseLabel" class="text-indigo-400 font-mono font-bold">Total: ₹0</span>
           </div>
-          <div id="expenseList" class="divide-y divide-slate-800"></div>
+          <div id="expenseList" class="divide-y divide-white/5"></div>
         </div>
       </section>
 
       <!-- Tab 3: Chip Cashout & Final Settlement -->
       <section id="cashoutTab" class="hidden space-y-3.5">
-        <div id="playerCashoutBox" class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3.5 shadow">
+        <div id="playerCashoutBox" class="glass-card p-4 rounded-2xl space-y-3.5 shadow-lg border border-white/10">
           <div>
-            <h3 class="text-sm font-bold text-slate-100">Khel Khatam: Apne Chips & Token Gino</h3>
+            <h3 class="text-sm font-bold text-white">Khel Khatam: Apne Chips & Token Gino</h3>
             <p class="text-xs text-slate-400">Aapke paas jo chips, dice ya deck bache hain unka count daalo.</p>
           </div>
 
@@ -245,16 +258,16 @@
           </div>
 
           <!-- High-Value Props -->
-          <div class="space-y-1.5 pt-2 border-t border-slate-800">
+          <div class="space-y-1.5 pt-2 border-t border-white/10">
             <div class="text-[11px] font-bold text-amber-400 flex items-center justify-between">
               <span>Bade Tokens (High Value)</span>
-              <span class="text-[9px] bg-amber-400/10 border border-amber-400/30 text-amber-300 px-1.5 py-0.2 rounded font-mono">DICE & DECK</span>
+              <span class="text-[9px] bg-amber-500/10 border border-amber-500/30 text-amber-300 px-1.5 py-0.2 rounded font-mono">DICE & DECK</span>
             </div>
             <div id="specialPropGrid" class="grid grid-cols-2 gap-2"></div>
           </div>
 
           <!-- Preview -->
-          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
+          <div class="bg-gray-950 p-3 rounded-xl border border-white/10 flex justify-between items-center text-xs">
             <div>
               <span class="text-slate-400 block text-[10px]">Total Points:</span>
               <span id="cashoutTotalChips" class="font-mono font-extrabold text-slate-100 text-sm">0 pts</span>
@@ -265,19 +278,19 @@
             </div>
           </div>
 
-          <button onclick="submitCashout()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-xl text-xs shadow active:scale-98">
+          <button onclick="submitCashout()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-xl text-xs shadow active:scale-98 transition">
             Stack Submit Karo Banker Ko ✓
           </button>
         </div>
 
         <!-- Settlement Card -->
-        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3 shadow">
+        <div class="glass-card p-4 rounded-2xl space-y-3 shadow-lg border border-white/10">
           <div class="flex justify-between items-center">
             <div>
-              <h3 class="text-sm font-extrabold text-slate-100">Final Hisaab (Poker + Kharcha)</h3>
+              <h3 class="text-sm font-extrabold text-white">Final Hisaab (Poker + Kharcha)</h3>
               <p class="text-[11px] text-slate-400">Sabka profit-loss jod kar ek single hisaab</p>
             </div>
-            <button id="btnFinalize" onclick="finalizeSettlement()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow">
+            <button id="btnFinalize" onclick="finalizeSettlement()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow active:scale-95 transition">
               Hisaab Calculate Karo
             </button>
           </div>
@@ -287,8 +300,8 @@
           </div>
 
           <!-- Close Game & Archive -->
-          <div id="closeGameSection" class="hidden border-t border-slate-800 pt-3">
-            <button onclick="closeAndArchiveGame()" class="w-full bg-gradient-to-r from-rose-700 to-red-600 hover:from-rose-600 hover:to-red-500 text-white font-extrabold py-2.5 rounded-xl text-xs shadow-lg active:scale-98">
+          <div id="closeGameSection" class="hidden border-t border-white/10 pt-3">
+            <button onclick="closeAndArchiveGame()" class="w-full bg-gradient-to-r from-rose-700 to-red-600 hover:from-rose-600 hover:to-red-500 text-white font-extrabold py-2.5 rounded-xl text-xs shadow-lg active:scale-98 transition">
               🏁 Game Finalize Karke Save Karo (Archive)
             </button>
             <p class="text-[10px] text-slate-400 text-center mt-1">Ye summary ko permanent history me save karke naya room kholega.</p>
@@ -311,7 +324,7 @@
       <!-- Tab 5: Admin Panel (Malak Controls) -->
       <section id="adminTab" class="hidden space-y-4">
         <!-- User Controls -->
-        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3 shadow">
+        <div class="glass-card p-4 rounded-2xl space-y-3 shadow-lg border border-white/10">
           <div class="flex items-center justify-between">
             <h3 class="text-sm font-bold text-amber-400">Khiladiyon Ka Control (Admin Power)</h3>
             <span class="text-[10px] text-slate-400">Banker Banao, Disable, Delete</span>
@@ -320,33 +333,33 @@
         </div>
 
         <!-- Valuation Engine -->
-        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3 shadow">
+        <div class="glass-card p-4 rounded-2xl space-y-3 shadow-lg border border-white/10">
           <div>
             <h3 class="text-sm font-bold text-emerald-400">⚙️ Chips, Dice Aur Deck Ki Value Set Karo</h3>
             <p class="text-xs text-slate-400">Admin yahan har token ki points value aur cash ratio fix kar sakta hai.</p>
           </div>
 
-          <div class="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
+          <div class="grid grid-cols-2 gap-2 text-xs bg-gray-950 p-3 rounded-xl border border-white/10">
             <div>
-              <label class="block text-slate-400 mb-1">Buy-in Cash (₹)</label>
-              <input type="number" id="adminBaseCash" value="500" class="w-full bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-lg text-white font-mono" />
+              <label class="block text-slate-400 mb-1 font-semibold">Buy-in Cash (₹)</label>
+              <input type="number" id="adminBaseCash" value="500" class="w-full bg-gray-900 border border-white/15 px-3 py-1.5 rounded-lg text-white font-mono" />
             </div>
             <div>
-              <label class="block text-slate-400 mb-1">Chips per Buy-in (pts)</label>
-              <input type="number" id="adminBaseChips" value="1000" class="w-full bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-lg text-white font-mono" />
+              <label class="block text-slate-400 mb-1 font-semibold">Chips per Buy-in (pts)</label>
+              <input type="number" id="adminBaseChips" value="1000" class="w-full bg-gray-900 border border-white/15 px-3 py-1.5 rounded-lg text-white font-mono" />
             </div>
           </div>
 
           <div id="adminTokenConfigList" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs"></div>
 
-          <button onclick="saveAdminConfig()" class="w-full bg-amber-600 hover:bg-amber-500 text-slate-950 font-black text-xs py-2.5 rounded-xl shadow transition">
+          <button onclick="saveAdminConfig()" class="w-full bg-amber-500 hover:bg-amber-400 text-gray-950 font-black text-xs py-2.5 rounded-xl shadow transition active:scale-98">
             Rules & Values Save Karo
           </button>
         </div>
       </section>
 
       <!-- Live Audit Feed -->
-      <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-3 text-xs text-slate-400 space-y-1">
+      <div class="glass-card rounded-2xl p-3 text-xs text-slate-400 space-y-1 border border-white/5">
         <span class="font-bold text-slate-300 block mb-1">Live Addaa Updates:</span>
         <ul id="auditLogList" class="space-y-1 max-h-24 overflow-y-auto font-mono text-[11px]"></ul>
       </div>
@@ -356,7 +369,7 @@
   </main>
 
   <!-- BOTTOM FIXED NAVIGATION BAR -->
-  <nav id="bottomNav" class="hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-lg border-t border-amber-600/30 px-2 py-1.5 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.6)]">
+  <nav id="bottomNav" class="hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-950/95 backdrop-blur-xl border-t border-white/10 px-2 py-1.5 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.7)]">
     <div class="max-w-2xl mx-auto flex items-center justify-around text-center">
       
       <button id="bnav_table" onclick="switchTab('table')" class="flex flex-col items-center py-1 px-2.5 rounded-xl text-amber-400 font-extrabold transition">
@@ -389,21 +402,21 @@
 
   <!-- POPUP 1: Full Naughty / Humorous Poker Quote Reader Modal -->
   <div id="quoteModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/50 rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
-      <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+    <div class="glass-card rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl border border-amber-500/40">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2">
         <div class="flex items-center gap-1.5 text-amber-400 font-bold text-xs uppercase tracking-wider">
-          <span>🔥</span> Naughty & Savage Poker Gyaan
+          <span>🔥</span> 18+ Naughty Poker Gyaan
         </div>
         <button onclick="toggleQuoteModal(false)" class="text-slate-400 hover:text-white text-lg font-bold">&times;</button>
       </div>
 
-      <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-slate-200 text-sm italic font-medium leading-relaxed break-words whitespace-normal" id="fullModalQuoteText"></div>
+      <div class="bg-gray-950/90 p-4 rounded-2xl border border-white/10 text-slate-200 text-sm italic font-medium leading-relaxed break-words whitespace-normal" id="fullModalQuoteText"></div>
 
       <div class="flex gap-2">
-        <button onclick="nextRandomQuoteInModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold py-2 rounded-xl text-xs border border-slate-700">
+        <button onclick="nextRandomQuoteInModal()" class="flex-1 bg-gray-850 hover:bg-gray-800 text-amber-300 font-bold py-2 rounded-xl text-xs border border-white/10 transition active:scale-95">
           Agla Gyaan ➔
         </button>
-        <button onclick="toggleQuoteModal(false)" class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2 rounded-xl text-xs shadow">
+        <button onclick="toggleQuoteModal(false)" class="flex-1 bg-amber-500 hover:bg-amber-400 text-gray-950 font-black py-2 rounded-xl text-xs shadow transition active:scale-95">
           Band Karo
         </button>
       </div>
@@ -412,29 +425,29 @@
 
   <!-- POPUP 2: Easy Install App Instructions Modal -->
   <div id="installGuideModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-amber-500/40 rounded-3xl max-w-md w-full p-5 space-y-4 shadow-2xl">
-      <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+    <div class="glass-card rounded-3xl max-w-md w-full p-5 space-y-4 shadow-2xl border border-amber-500/40">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2">
         <div class="flex items-center gap-2">
-          <img src="/icons/icon-192.png" alt="App Icon" class="w-8 h-8 rounded-xl border border-amber-500/40" />
+          <img src="/icons/icon-192.png" alt="App Icon" class="w-8 h-8 rounded-xl border border-amber-500/40 shadow-sm" />
           <h3 class="font-black text-sm text-amber-300">Phone Me App Install Karo</h3>
         </div>
         <button onclick="toggleInstallGuide(false)" class="text-slate-400 hover:text-white text-lg font-bold">&times;</button>
       </div>
 
       <div class="space-y-3 text-xs text-slate-300">
-        <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-1.5">
+        <div class="bg-gray-950/80 p-3 rounded-2xl border border-white/10 space-y-1.5">
           <div class="font-bold text-emerald-400 flex items-center gap-1.5">
             <span>🤖</span> Android / Chrome Users:
           </div>
           <p class="text-[11px] text-slate-300">
             Browser me upar daayein (top-right) <b>3 dots (⋮)</b> par tap karo aur <b>"Install App"</b> ya <b>"Add to Home screen"</b> dabao.
           </p>
-          <button id="directInstallBtnModal" class="hidden w-full mt-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 rounded-lg text-xs shadow">
+          <button id="directInstallBtnModal" class="hidden w-full mt-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 rounded-lg text-xs shadow transition">
             Direct Install Karo 📲
           </button>
         </div>
 
-        <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-1.5">
+        <div class="bg-gray-950/80 p-3 rounded-2xl border border-white/10 space-y-1.5">
           <div class="font-bold text-sky-400 flex items-center gap-1.5">
             <span>🍏</span> iPhone / Safari Users:
           </div>
@@ -446,7 +459,7 @@
         </div>
       </div>
 
-      <button onclick="toggleInstallGuide(false)" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2 rounded-xl text-xs">
+      <button onclick="toggleInstallGuide(false)" class="w-full bg-gray-800 hover:bg-gray-700 text-slate-200 font-bold py-2 rounded-xl text-xs transition">
         Theek Hai, Samajh Gaya
       </button>
     </div>
@@ -454,9 +467,9 @@
 
   <!-- POPUP 3: Player Profile Modal -->
   <div id="profileModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+    <div class="glass-card rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl border border-white/10">
       <div class="flex justify-between items-center">
-        <h3 class="font-extrabold text-sm text-slate-100">Avatar & UPI Change Karo</h3>
+        <h3 class="font-extrabold text-sm text-white">Avatar & UPI Change Karo</h3>
         <button onclick="toggleProfileModal(false)" class="text-slate-400 hover:text-white">&times;</button>
       </div>
       <div class="space-y-3 text-xs">
@@ -466,9 +479,9 @@
         </div>
         <div>
           <label class="block text-slate-300 font-semibold mb-1">UPI ID (Paisa lene ke liye)</label>
-          <input type="text" id="profileUpi" placeholder="e.g. yourname@okhdfcbank" class="w-full bg-slate-800 border border-slate-700 px-3 py-2 rounded-xl text-slate-100 font-mono" />
+          <input type="text" id="profileUpi" placeholder="e.g. yourname@okhdfcbank" class="w-full bg-gray-900 border border-white/15 px-3 py-2 rounded-xl text-white font-mono focus:border-amber-500 focus:outline-none" />
         </div>
-        <button onclick="saveProfile()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-xl shadow">
+        <button onclick="saveProfile()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-xl shadow transition active:scale-95">
           Profile Save Karo
         </button>
       </div>
@@ -477,15 +490,15 @@
 
   <!-- POPUP 4: Registration Modal -->
   <div id="signupModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+    <div class="glass-card rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl border border-white/10">
       <div class="flex justify-between items-center">
-        <h3 class="font-extrabold text-sm text-slate-100">Naye Khiladi Ka Registration</h3>
+        <h3 class="font-extrabold text-sm text-white">Naye Khiladi Ka Registration</h3>
         <button onclick="toggleSignupModal(false)" class="text-slate-400 hover:text-white">&times;</button>
       </div>
       <div class="space-y-3 text-xs">
         <div>
           <label class="block text-slate-300 font-semibold mb-1">Aapka Asli Naam</label>
-          <input type="text" id="regName" placeholder="e.g. Bunty, Nawab, Rocky" class="w-full bg-slate-800 border border-slate-700 px-3 py-2 rounded-xl text-slate-100" />
+          <input type="text" id="regName" placeholder="e.g. Bunty, Nawab, Rocky" class="w-full bg-gray-900 border border-white/15 px-3 py-2 rounded-xl text-white focus:border-amber-500 focus:outline-none" />
         </div>
         <div>
           <label class="block text-slate-300 font-semibold mb-1.5">Avatar Chun Lo</label>
@@ -493,13 +506,13 @@
         </div>
         <div>
           <label class="block text-slate-300 font-semibold mb-1">4-Digit Secret PIN</label>
-          <input type="password" id="regPin" maxlength="4" placeholder="••••" inputmode="numeric" class="w-full text-center tracking-[0.6em] text-base font-mono bg-slate-800 border border-slate-700 px-3 py-2 rounded-xl text-slate-100" />
+          <input type="password" id="regPin" maxlength="4" placeholder="••••" inputmode="numeric" class="w-full text-center tracking-[0.6em] text-base font-mono bg-gray-900 border border-white/15 px-3 py-2 rounded-xl text-white focus:border-amber-500 focus:outline-none" />
         </div>
         <div>
           <label class="block text-slate-300 font-semibold mb-1">UPI ID (GPay / PhonePe / Paytm)</label>
-          <input type="text" id="regUpi" placeholder="e.g. nawab@upi" class="w-full bg-slate-800 border border-slate-700 px-3 py-2 rounded-xl text-slate-100 font-mono" />
+          <input type="text" id="regUpi" placeholder="e.g. nawab@upi" class="w-full bg-gray-900 border border-white/15 px-3 py-2 rounded-xl text-white font-mono focus:border-amber-500 focus:outline-none" />
         </div>
-        <button onclick="submitSignup()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2.5 rounded-xl shadow">
+        <button onclick="submitSignup()" class="w-full bg-amber-500 hover:bg-amber-400 text-gray-950 font-black py-2.5 rounded-xl shadow transition active:scale-95">
           Admin Ko Request Bhejo
         </button>
       </div>
