@@ -141,6 +141,11 @@ function selectProfileAvatar(av) {
   });
 }
 
+
+socket.on('actionError', (msg) => {
+  alert('⚠️ ' + msg);
+});
+
 socket.on('stateSync', (data) => {
   latestState = data;
   renderApp();
@@ -316,7 +321,54 @@ function renderApp() {
     }
   }
 
-  const isBankerOrAdmin = currentUser.isAdmin || (latestState.game.bankerUserId === currentUser.id);
+  const isBankerOrAdmin = currentUser && (currentUser.isAdmin || (latestState.game.bankerUserId === currentUser.id));
+
+  const isBanker = currentUser && (latestState.game.bankerUserId === currentUser.id);
+  const isAdmin = currentUser && currentUser.isAdmin;
+
+  // Rule 1: Admin cannot play poker!
+  const playerCashoutBox = document.getElementById('playerCashoutBox');
+  const btnSeatPakdo = document.getElementById('btnSeatPakdo');
+  const specTitle = document.getElementById('spectatorTitle');
+  const specSubtitle = document.getElementById('spectatorSubtitle');
+
+  if (isAdmin) {
+    if (playerCashoutBox) playerCashoutBox.classList.add('hidden');
+    if (btnSeatPakdo) btnSeatPakdo.classList.add('hidden');
+    if (specTitle) specTitle.innerText = "👑 Admin Manager Mode";
+    if (specSubtitle) specSubtitle.innerText = "Aap club ke Malak/Manager hain. Aap poker nahi khel sakte.";
+  } else {
+    if (playerCashoutBox && seatedPlayer) playerCashoutBox.classList.remove('hidden');
+    if (btnSeatPakdo) btnSeatPakdo.classList.remove('hidden');
+    if (specTitle) specTitle.innerText = "Aap abhi bahar baithe tamasha dekh rahe ho!";
+    if (specSubtitle) specSubtitle.innerText = "Seat pakdo aur 1x Buy-in leke game me aao.";
+  }
+
+  // Rule 4: Only current Banker can settle!
+  const btnSettleKharcha = document.getElementById('btnSettleKharcha');
+  const btnFinalizePoker = document.getElementById('btnFinalizePoker');
+  const closeBox = document.getElementById('closeGameSection');
+
+  if (btnSettleKharcha) {
+    btnSettleKharcha.disabled = !isBanker;
+    btnSettleKharcha.className = isBanker 
+      ? 'bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow active:scale-95 transition'
+      : 'bg-gray-800 text-slate-500 cursor-not-allowed text-xs font-bold px-3 py-1.5 rounded-xl';
+    btnSettleKharcha.innerText = isBanker ? 'Kharcha Settle Karo' : 'Banker Settle Karega (Live View)';
+  }
+
+  if (btnFinalizePoker) {
+    btnFinalizePoker.disabled = !isBanker;
+    btnFinalizePoker.className = isBanker
+      ? 'bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow active:scale-95 transition'
+      : 'bg-gray-800 text-slate-500 cursor-not-allowed text-xs font-bold px-3 py-1.5 rounded-xl';
+    btnFinalizePoker.innerText = isBanker ? 'Poker Hisaab Nikalo' : 'Banker Hisaab Nikalega (Live View)';
+  }
+
+  if (closeBox) {
+    closeBox.classList.toggle('hidden', !isBanker);
+  }
+
 
   const seatedPlayer = latestState.game.players.find(p => p.userId === currentUser.id);
   document.getElementById('joinTableBanner').classList.toggle('hidden', !!seatedPlayer);
@@ -516,11 +568,13 @@ function computeLocalCashoutPreview() {
 
 
 function finalizePokerSettlementAction() {
-  socket.emit('finalizePokerSettlement');
+  if (!currentUser) return;
+  socket.emit('finalizePokerSettlement', { triggerUserId: currentUser.id });
 }
 
 function calculateExpenseSettlementAction() {
-  socket.emit('calculateExpenseSettlement');
+  if (!currentUser) return;
+  socket.emit('calculateExpenseSettlement', { triggerUserId: currentUser.id });
 }
 
 function renderPurePokerSettlement(settlement, isBankerOrAdmin) {
@@ -590,66 +644,22 @@ function renderPurePokerSettlement(settlement, isBankerOrAdmin) {
 function renderPureExpenseSettlement(settlement) {
   const container = document.getElementById('pureExpenseSettlementReport');
   if (!settlement) {
-    container.innerHTML = '<p class="text-xs text-slate-500 text-center py-2 font-medium">Kharcha settlement dekhne ke liye "Kharcha Settle Karo" dabayein.</p>';
+    container.innerHTML = '<p class="text-xs text-slate-500 text-center py-2">Kharcha settlement dekhne ke liye "Kharcha Settle Karo" dabayein.</p>';
     return;
   }
 
-  const pCount = settlement.playerCount || (settlement.balances ? settlement.balances.length : 1);
-
   let html = `
-    <div class="grid grid-cols-3 gap-2 bg-gray-950 p-3 rounded-xl border border-indigo-500/30 text-center text-xs font-mono">
+    <div class="grid grid-cols-2 gap-2 bg-gray-950 p-3 rounded-xl border border-indigo-500/30 text-center text-xs font-mono">
       <div>
-        <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-bold">Party Kharcha</span>
-        <span class="text-indigo-400 font-black text-sm">₹${settlement.totalExpenses}</span>
+        <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-bold">Total Party Kharcha</span>
+        <span class="text-indigo-400 font-bold text-sm">₹${settlement.totalExpenses}</span>
       </div>
       <div>
-        <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-bold">Khiladi</span>
-        <span class="text-slate-200 font-bold text-sm">${pCount} log</span>
-      </div>
-      <div>
-        <span class="text-[9px] uppercase tracking-wider text-amber-400 block font-bold">Per Head Share</span>
-        <span class="text-amber-300 font-black text-sm">₹${settlement.fairShare}</span>
+        <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-bold">Har Khiladi Ka Hissa</span>
+        <span class="text-slate-100 font-bold text-sm">₹${settlement.fairShare} / person</span>
       </div>
     </div>
 
-    <!-- Per-Player Contribution Breakdown -->
-    <div class="space-y-1.5 pt-1">
-      <div class="text-[11px] font-bold text-slate-200 uppercase tracking-wider flex justify-between">
-        <span>Khiladiyon Ka Kharcha Breakdown:</span>
-        <span class="text-[10px] text-slate-400 font-normal">Paid vs Share</span>
-      </div>
-      <div class="bg-gray-950 rounded-xl border border-white/10 overflow-hidden divide-y divide-white/5">
-        ${(settlement.balances || []).map(b => {
-          const isCreditor = b.expenseNet > 0;
-          const isDebtor = b.expenseNet < 0;
-          const colorClass = isCreditor ? 'text-emerald-400' : isDebtor ? 'text-rose-400' : 'text-slate-400';
-          const sign = b.expenseNet > 0 ? '+' : '';
-          return `
-            <div class="p-2.5 flex items-center justify-between text-xs">
-              <div class="flex items-center gap-2">
-                <span class="text-lg leading-none">${b.avatar || '👤'}</span>
-                <div>
-                  <div class="font-bold text-white">${b.name}</div>
-                  <div class="text-[10px] text-slate-400 font-mono">
-                    Kharch kiya: ₹${b.paidAmount || 0} | Fair Share: ₹${b.fairShare || settlement.fairShare}
-                  </div>
-                </div>
-              </div>
-              <div class="text-right">
-                <div class="font-mono font-black text-sm ${colorClass}">
-                  ${sign}₹${b.expenseNet}
-                </div>
-                <span class="text-[9px] font-mono font-bold ${isCreditor ? 'text-emerald-400' : isDebtor ? 'text-rose-400' : 'text-slate-400'}">
-                  ${isCreditor ? 'LEGA (GETS BACK)' : isDebtor ? 'DEGA (OWES)' : 'SETTLED'}
-                </span>
-              </div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    </div>
-
-    <!-- Who Pays Whom -->
     <div class="space-y-2 pt-1">
       <div class="text-xs font-extrabold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
         <span>🧾</span> Sirf Kharcha Ka Lena-Dena (Bills Settlement):
@@ -658,7 +668,7 @@ function renderPureExpenseSettlement(settlement) {
 
   const txs = settlement.transactions || [];
   if (txs.length === 0) {
-    html += `<div class="p-3 text-center text-xs text-slate-400 bg-gray-950 rounded-xl border border-white/10">Kharchon ka hisaab bilkul barabar hai! Kisi ko kuch nahi dena.</div>`;
+    html += `<div class="p-3 text-center text-xs text-slate-400 bg-gray-950 rounded-xl border border-white/10">Kharchon ka hisaab bilkul barabar hai!</div>`;
   } else {
     html += txs.map(t => `
       <div class="bg-gray-900 border border-indigo-500/20 p-3 rounded-xl flex items-center justify-between text-xs shadow-sm">
@@ -687,6 +697,8 @@ function renderPureExpenseSettlement(settlement) {
   html += `</div>`;
   container.innerHTML = html;
 }
+
+
 
 function renderDetailedHistory(history) {
   const container = document.getElementById('gameHistoryList');
@@ -788,41 +800,54 @@ function renderAdminUserManagement(users) {
     return;
   }
 
+  const isCurrentBanker = currentUser && (latestState.game.bankerUserId === currentUser.id);
+
   container.innerHTML = users.map(u => {
+    const isExcluded = !!u.isExcludedFromExpense;
     return `
-      <div class="bg-gray-900 border border-white/10 p-3 rounded-xl flex items-center justify-between text-xs shadow-sm">
+      <div class="bg-gray-900 border border-white/10 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs shadow-sm">
         <div class="flex items-center gap-2.5">
           <span class="text-xl leading-none">${u.avatar || '👤'}</span>
           <div>
-            <div class="font-bold text-white flex items-center gap-1.5">
+            <div class="font-bold text-white flex items-center gap-1.5 flex-wrap">
               ${u.name}
-              ${u.isAdmin ? '<span class="text-[8px] text-amber-400 font-mono font-bold bg-amber-500/10 px-1 py-0.2 rounded border border-amber-500/30">ADMIN</span>' : ''}
-              ${u.isBanker ? '<span class="text-[8px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-1 py-0.2 rounded border border-emerald-500/30">👑 BANKER</span>' : ''}
+              ${u.isAdmin ? '<span class="text-[8px] text-amber-400 font-mono font-bold bg-amber-500/10 px-1 py-0.2 rounded border border-amber-500/30">ADMIN (NO PLAY)</span>' : ''}
+              ${u.isBanker ? '<span class="text-[8px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-1 py-0.2 rounded border border-emerald-500/30">👑 CURRENT BANKER</span>' : ''}
+              ${isExcluded ? '<span class="text-[8px] bg-red-950/80 text-rose-300 border border-rose-700 px-1 py-0.2 rounded font-mono font-bold">KHARCHE SE BAHAR</span>' : '<span class="text-[8px] bg-emerald-950/80 text-emerald-300 border border-emerald-800 px-1 py-0.2 rounded font-mono">KHARCHE ME SHAMIL</span>'}
               ${u.isDisabled ? '<span class="text-[8px] bg-rose-950 text-rose-400 border border-rose-800 px-1 rounded">DISABLED</span>' : ''}
-              ${!u.isApproved ? '<span class="text-[8px] bg-amber-950 text-amber-300 border border-amber-800 px-1 rounded">PENDING</span>' : ''}
+              ${!u.isApproved ? '<span class="text-[8px] bg-amber-950 text-amber-300 border border-amber-800 px-1 rounded">PENDING APPROVAL</span>' : ''}
             </div>
             <div class="text-[10px] text-slate-400 font-mono">UPI: ${u.upiId || 'None'}</div>
           </div>
         </div>
 
-        <div class="flex items-center gap-1.5">
+        <div class="flex items-center gap-1.5 flex-wrap justify-end">
           ${!u.isApproved ? `
             <button onclick="approveUser(${u.id})" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] px-2.5 py-1 rounded-lg transition active:scale-95">
               Approve
             </button>
           ` : ''}
 
+          <!-- Admin Rule: Kharche se hatana ya jodna -->
           ${!u.isAdmin ? `
-            <button onclick="assignBanker(${u.id})" class="bg-amber-500 hover:bg-amber-400 text-gray-950 font-black text-[10px] px-2 py-1 rounded-lg shadow transition active:scale-95" title="Banker Banao">
-              👑 Banker
+            <button onclick="toggleExcludeFromExpense(${u.id})" class="${isExcluded ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-100 border border-emerald-600' : 'bg-amber-900/50 hover:bg-amber-800 text-amber-200 border border-amber-700/60'} text-[10px] font-bold px-2 py-1 rounded-lg transition active:scale-95" title="Kharcho se hatao ya jodo">
+              ${isExcluded ? '✓ Kharche Me Jodo' : '🚫 Kharche Se Hatao'}
             </button>
+
+            <!-- Banker Rule: Only Current Banker can pass Banker role to someone else -->
+            ${isCurrentBanker && !u.isBanker ? `
+              <button onclick="assignBanker(${u.id})" class="bg-amber-500 hover:bg-amber-400 text-gray-950 font-black text-[10px] px-2 py-1 rounded-lg shadow transition active:scale-95" title="Gaddi Saupo">
+                👑 Gaddi Do
+              </button>
+            ` : ''}
+
             <button onclick="toggleDisableUser(${u.id})" class="bg-gray-800 hover:bg-gray-700 text-slate-200 text-[10px] px-2 py-1 rounded-lg border border-white/10 transition active:scale-95">
               ${u.isDisabled ? 'Enable' : 'Disable'}
             </button>
             <button onclick="deleteUser(${u.id})" class="bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-300 text-[10px] px-2 py-1 rounded-lg font-bold transition active:scale-95">
               Delete
             </button>
-          ` : '<span class="text-[10px] text-slate-500 font-mono">Owner</span>'}
+          ` : '<span class="text-[10px] text-amber-400/80 font-mono bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">Club Owner</span>'}
         </div>
       </div>
     `;
@@ -884,11 +909,13 @@ function requestRebuy(multiplier) {
 }
 
 function approveRebuy(requestId) {
-  socket.emit('approveRebuy', requestId);
+  if (!currentUser) return;
+  socket.emit('approveRebuy', { bankerUserId: currentUser.id, requestId });
 }
 
 function rejectRebuy(requestId) {
-  socket.emit('rejectRebuy', requestId);
+  if (!currentUser) return;
+  socket.emit('rejectRebuy', { bankerUserId: currentUser.id, requestId });
 }
 
 function addExpense() {
@@ -919,8 +946,9 @@ function finalizeSettlement() {
 }
 
 function closeAndArchiveGame() {
+  if (!currentUser) return;
   if (confirm("Game band karke history me save karna hai?")) {
-    socket.emit('closeAndArchiveGame');
+    socket.emit('closeAndArchiveGame', { triggerUserId: currentUser.id });
   }
 }
 
@@ -938,9 +966,10 @@ function deleteUser(userId) {
   }
 }
 
-function assignBanker(userId) {
-  if (confirm("Is khiladi ko Banker banana hai?")) {
-    socket.emit('assignBanker', userId);
+function assignBanker(newBankerUserId) {
+  if (!currentUser) return;
+  if (confirm("Kya aap apni Banker ki gaddi is khiladi ko saupna chahte hain?")) {
+    socket.emit('assignBanker', { currentBankerUserId: currentUser.id, newBankerUserId });
   }
 }
 
@@ -1062,4 +1091,13 @@ async function autoRegisterPushIfGranted() {
       console.log('Auto push registration silent fail:', e);
     }
   }
+}
+
+
+function toggleExcludeFromExpense(targetUserId) {
+  if (!currentUser || !currentUser.isAdmin) {
+    alert('Sirf Admin khiladi ko kharche se hata ya jod sakta hai!');
+    return;
+  }
+  socket.emit('toggleExcludeFromExpense', { adminUserId: currentUser.id, targetUserId });
 }

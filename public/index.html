@@ -172,10 +172,10 @@
         <!-- Spectator Banner -->
         <div id="joinTableBanner" class="hidden bg-emerald-950/40 border border-emerald-500/30 p-3.5 rounded-2xl flex items-center justify-between shadow-lg">
           <div>
-            <div class="text-xs font-bold text-emerald-300">Aap abhi bahar baithe tamasha dekh rahe ho!</div>
-            <div class="text-[11px] text-slate-400">Seat pakdo aur 1x Buy-in leke game me aao.</div>
+            <div id="spectatorTitle" class="text-xs font-bold text-emerald-300">Aap abhi bahar baithe tamasha dekh rahe ho!</div>
+            <div id="spectatorSubtitle" class="text-[11px] text-slate-400">Seat pakdo aur 1x Buy-in leke game me aao.</div>
           </div>
-          <button onclick="joinTable()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-3.5 py-2 rounded-xl shadow active:scale-95 transition">
+          <button id="btnSeatPakdo" onclick="joinTable()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-3.5 py-2 rounded-xl shadow active:scale-95 transition">
             Seat Pakdo (₹500)
           </button>
         </div>
@@ -268,8 +268,8 @@
               </h3>
               <p class="text-[11px] text-slate-400">Poker game se alag: sirf bills aur splitwise fair share hisaab</p>
             </div>
-            <button onclick="calculateExpenseSettlementAction()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow active:scale-95 transition">
-              Kharcha Settle Karo
+            <button id="btnSettleKharcha" onclick="calculateExpenseSettlementAction()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow active:scale-95 transition">
+              Kharcha Settle Karo (👑 Banker)
             </button>
           </div>
 
@@ -330,7 +330,7 @@
               <p class="text-[11px] text-slate-400">Pure table poker results: Buy-ins aur Rebuys vs Final Cashout</p>
             </div>
             <button id="btnFinalizePoker" onclick="finalizePokerSettlementAction()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow active:scale-95 transition">
-              Poker Hisaab Nikalo
+              Poker Hisaab Nikalo (👑 Banker)
             </button>
           </div>
 
@@ -366,8 +366,8 @@
         <!-- User Controls -->
         <div class="glass-card p-4 rounded-2xl space-y-3 shadow-lg border border-white/10">
           <div class="flex items-center justify-between">
-            <h3 class="text-sm font-bold text-amber-400">Khiladiyon Ka Control (Admin Power)</h3>
-            <span class="text-[10px] text-slate-400">Banker Banao, Disable, Delete</span>
+            <h3 class="text-sm font-bold text-amber-400">Khiladiyon Ka Nazm (Admin Manager)</h3>
+            <span class="text-[10px] text-slate-400">Approve, Kharche Se Hatao, Ban, Delete</span>
           </div>
           <div id="adminUserManagementList" class="space-y-2"></div>
         </div>

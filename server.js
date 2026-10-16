@@ -53,13 +53,22 @@ let state = {
   users: [
     {
       id: 1,
+      name: 'Owner Admin',
+      pinHash: bcrypt.hashSync('1234', 10),
+      upiId: 'admin@upi',
+      avatar: '👑',
+      isAdmin: true, // ADMIN CANNOT PLAY POKER (MANAGER ONLY)
+      isApproved: true,
+      isDisabled: false
+    },
+    {
+      id: 2,
       name: 'Nawab Banker',
       pinHash: bcrypt.hashSync('1234', 10),
       upiId: 'nawab@upi',
-      avatar: '👑',
-      isAdmin: true,
+      avatar: '🎩',
+      isAdmin: false,
       isApproved: true,
-      isBanker: true,
       isDisabled: false
     }
   ],
@@ -67,7 +76,7 @@ let state = {
     id: 1,
     roomCode: 'ADDAA88',
     status: 'ACTIVE',
-    bankerUserId: 1,
+    bankerUserId: 2, // Default initial Banker
     bankerName: 'Nawab Banker',
     baseBuyInCash: 500,
     baseStartingChips: 1000,
@@ -76,13 +85,14 @@ let state = {
     players: [],
     pendingRebuys: [],
     expenses: [],
-    auditLog: ['Mehfil shuru! Poker Table aur Kharcha ab 100% alag alag tabs me hain.'],
+    roomMembers: [1, 2],
+    excludedExpenseUserIds: [], // Users excluded by Admin from party kharcha
+    auditLog: ['Mehfil shuru! Admin sirf nazraana sambhalenge (khel nahi sakte). Banker ke haath me hisaab hai.'],
     pokerSettlement: null,
     expenseSettlement: null
   },
   gameHistory: []
 };
-
 
 // ------------------- AUTOMATED POSTGRESQL PERSISTENCE ENGINE -------------------
 async function initDatabase() {
@@ -202,7 +212,7 @@ function solveDebtGraph(balances, amountKey) {
   return transactions;
 }
 
-// 1. PURE POKER SETTLEMENT (Strictly chips & buy-ins only, Zero kharcha included)
+// 1. PURE POKER SETTLEMENT (Banker-only calculation; purely table chips vs buy-ins)
 function calculatePurePokerSettlement() {
   const players = state.game.players;
   if (players.length === 0) return { totalPot: 0, balances: [], transactions: [] };
@@ -232,26 +242,49 @@ function calculatePurePokerSettlement() {
   };
 }
 
-// 2. PURE KHARCHA SETTLEMENT (Strictly expenses & splitwise fair share among all registered/approved members)
-function getActiveExpenseMembers() {
-  // Combine all approved users in the club. If poker players exist, ensure they are also included.
-  const approvedMap = new Map();
-  state.users.filter(u => u.isApproved && !u.isDisabled).forEach(u => {
-    approvedMap.set(Number(u.id), {
-      id: Number(u.id),
-      name: u.name,
-      avatar: u.avatar || '👤',
-      upiId: u.upiId || ''
+// 2. ROOM-BASED KHARCHA SPLITTER (Excluding players removed from Kharcha by Admin)
+function getActiveRoomExpenseMembers() {
+  const memberMap = new Map();
+  const excludedIds = Array.isArray(state.game.excludedExpenseUserIds) ? state.game.excludedExpenseUserIds.map(Number) : [];
+
+  // Room members who joined and are approved and NOT excluded by Admin
+  if (Array.isArray(state.game.roomMembers)) {
+    state.game.roomMembers.forEach(uid => {
+      const numId = Number(uid);
+      if (!excludedIds.includes(numId)) {
+        const u = state.users.find(x => Number(x.id) === numId && x.isApproved && !x.isDisabled);
+        if (u) {
+          memberMap.set(Number(u.id), {
+            id: Number(u.id),
+            name: u.name,
+            avatar: u.avatar || '👤',
+            upiId: u.upiId || ''
+          });
+        }
+      }
     });
+  }
+
+  // Anyone seated at table (unless excluded)
+  state.game.players.forEach(p => {
+    const pid = Number(p.userId);
+    if (!excludedIds.includes(pid) && !memberMap.has(pid)) {
+      memberMap.set(pid, {
+        id: pid,
+        name: p.name,
+        avatar: p.avatar || '👤',
+        upiId: p.upiId || ''
+      });
+    }
   });
 
-  // Also ensure any player in expenses who paid is recognized
+  // Anyone who paid an expense
   state.game.expenses.forEach(e => {
     const pid = Number(e.payerId);
-    if (!approvedMap.has(pid)) {
+    if (!memberMap.has(pid)) {
       const u = state.users.find(x => Number(x.id) === pid);
       if (u) {
-        approvedMap.set(pid, {
+        memberMap.set(pid, {
           id: pid,
           name: u.name,
           avatar: u.avatar || '👤',
@@ -261,11 +294,11 @@ function getActiveExpenseMembers() {
     }
   });
 
-  return Array.from(approvedMap.values());
+  return Array.from(memberMap.values());
 }
 
 function calculatePureExpenseSettlement() {
-  const members = getActiveExpenseMembers();
+  const members = getActiveRoomExpenseMembers();
   const expenses = state.game.expenses;
   const count = Math.max(1, members.length);
 
@@ -349,15 +382,13 @@ app.post('/api/auth/signup', (req, res) => {
     avatar: avatar || '🦁',
     isAdmin: false,
     isApproved: false,
-    isBanker: false,
     isDisabled: false
   };
 
   state.users.push(newUser);
   state.game.auditLog.unshift(`Naya Khiladi [${cleanName}] entry maang raha hai.`);
   saveStateToDatabase().catch(()=>{});
-    io.emit('stateSync', getPublicState());
-  saveStateToDatabase().catch(()=>{});
+  io.emit('stateSync', getPublicState());
   res.json({ message: 'Registration request submit ho gayi! Admin ke approval ke baad login ho jayega.' });
 });
 
@@ -375,6 +406,11 @@ app.post('/api/auth/login', (req, res) => {
   const match = bcrypt.compareSync(pin, user.pinHash);
   if (!match) return res.status(401).json({ error: 'Galat PIN! Dhyan se PIN daalo.' });
 
+  if (!Array.isArray(state.game.roomMembers)) state.game.roomMembers = [];
+  if (!state.game.roomMembers.includes(user.id)) {
+    state.game.roomMembers.push(user.id);
+    saveStateToDatabase().catch(()=>{});
+  }
   res.json({
     user: {
       id: user.id,
@@ -382,16 +418,13 @@ app.post('/api/auth/login', (req, res) => {
       avatar: user.avatar,
       upiId: user.upiId,
       isAdmin: user.isAdmin,
-      isBanker: user.isBanker || (state.game.bankerUserId === user.id)
+      isBanker: (state.game.bankerUserId === user.id)
     }
   });
 });
 
 function getPublicState() {
-  // Always compute live expense summary in real-time across all active club members
-  const membersForExp = typeof getActiveExpenseMembers === 'function' 
-    ? getActiveExpenseMembers() 
-    : state.users.filter(u => u.isApproved && !u.isDisabled);
+  const membersForExp = typeof getActiveRoomExpenseMembers === 'function' ? getActiveRoomExpenseMembers() : [];
   const totalExp = state.game.expenses.reduce((s, e) => s + Number(e.amount), 0);
   const pCount = Math.max(1, membersForExp.length);
   const fairShare = totalExp > 0 ? (Math.round((totalExp / pCount) * 100) / 100) : 0;
@@ -418,7 +451,8 @@ function getPublicState() {
       isApproved: u.isApproved,
       isDisabled: u.isDisabled,
       isBanker: (state.game.bankerUserId === u.id),
-      upiId: u.upiId
+      upiId: u.upiId,
+      isExcludedFromExpense: Array.isArray(state.game.excludedExpenseUserIds) && state.game.excludedExpenseUserIds.includes(u.id)
     })),
     game: state.game,
     gameHistory: state.gameHistory
@@ -428,6 +462,7 @@ function getPublicState() {
 io.on('connection', (socket) => {
   socket.emit('stateSync', getPublicState());
 
+  // ADMIN ONLY: Approve Player
   socket.on('approveUser', async (userId) => {
     const user = state.users.find(u => u.id === Number(userId));
     if (user) {
@@ -435,10 +470,11 @@ io.on('connection', (socket) => {
       user.isDisabled = false;
       state.game.auditLog.unshift(`[${user.name}] ko table me entry de di gayi.`);
       saveStateToDatabase().catch(()=>{});
-    io.emit('stateSync', getPublicState());
+      io.emit('stateSync', getPublicState());
     }
   });
 
+  // ADMIN ONLY: Disable/Enable Player
   socket.on('toggleDisableUser', async (userId) => {
     const user = state.users.find(u => u.id === Number(userId));
     if (user && !user.isAdmin) {
@@ -446,10 +482,11 @@ io.on('connection', (socket) => {
       const act = user.isDisabled ? 'DISABLE' : 'ENABLE';
       state.game.auditLog.unshift(`Admin ne [${user.name}] ko ${act} kiya.`);
       saveStateToDatabase().catch(()=>{});
-    io.emit('stateSync', getPublicState());
+      io.emit('stateSync', getPublicState());
     }
   });
 
+  // ADMIN ONLY: Delete Player
   socket.on('deleteUser', async (userId) => {
     const user = state.users.find(u => u.id === Number(userId));
     if (user && !user.isAdmin) {
@@ -458,27 +495,67 @@ io.on('connection', (socket) => {
       delete pushSubscriptions[userId];
       state.game.auditLog.unshift(`[${user.name}] ko list se delete kar diya gaya.`);
       saveStateToDatabase().catch(()=>{});
-    io.emit('stateSync', getPublicState());
+      io.emit('stateSync', getPublicState());
     }
   });
 
-  socket.on('assignBanker', async (userId) => {
-    const user = state.users.find(u => u.id === Number(userId));
-    if (user) {
-      state.users.forEach(u => { u.isBanker = false; });
-      user.isBanker = true;
-      state.game.bankerUserId = user.id;
-      state.game.bankerName = user.name;
-      state.game.auditLog.unshift(`👑 NAYA BANKER: [${user.name}] ab se tijori sambhalenge!`);
-      saveStateToDatabase().catch(()=>{});
+  // ADMIN ONLY: Toggle Exclude Player from Kharcha (Kharche se hatana ya jodna)
+  socket.on('toggleExcludeFromExpense', async ({ adminUserId, targetUserId }) => {
+    const admin = state.users.find(u => u.id === Number(adminUserId));
+    if (!admin || !admin.isAdmin) return; // Only Admin can manage
+
+    const tid = Number(targetUserId);
+    const targetUser = state.users.find(u => u.id === tid);
+    if (!targetUser) return;
+
+    if (!Array.isArray(state.game.excludedExpenseUserIds)) {
+      state.game.excludedExpenseUserIds = [];
+    }
+
+    const idx = state.game.excludedExpenseUserIds.indexOf(tid);
+    if (idx === -1) {
+      state.game.excludedExpenseUserIds.push(tid);
+      state.game.auditLog.unshift(`🧾 Admin ne [${targetUser.name}] ko party kharche se ALAG kar diya (Inpe kharcha nahi lagega).`);
+    } else {
+      state.game.excludedExpenseUserIds.splice(idx, 1);
+      state.game.auditLog.unshift(`🧾 Admin ne [${targetUser.name}] ko wapas party kharche me SHAMIL kiya.`);
+    }
+
+    // Recalculate expense settlement in real-time
+    state.game.expenseSettlement = calculatePureExpenseSettlement();
+    saveStateToDatabase().catch(()=>{});
+    io.emit('stateSync', getPublicState());
+  });
+
+  // ONLY CURRENT BANKER CAN HAND OVER BANKER ROLE TO ANOTHER PLAYER
+  socket.on('assignBanker', async ({ currentBankerUserId, newBankerUserId }) => {
+    const currentBankerId = Number(currentBankerUserId);
+    const newBankerId = Number(newBankerUserId);
+
+    // Rule: Pahle se bana hua Banker hi doosre ko Banker bana sakta hai!
+    if (Number(state.game.bankerUserId) !== currentBankerId) {
+      socket.emit('actionError', 'Sirf maujooda Banker hi kisi aur ko Banker bana sakta hai!');
+      return;
+    }
+
+    const targetUser = state.users.find(u => u.id === newBankerId);
+    if (!targetUser) return;
+    if (targetUser.isAdmin) {
+      socket.emit('actionError', 'Admin Banker nahi ban sakta kyunki Admin poker nahi khelte!');
+      return;
+    }
+
+    state.game.bankerUserId = targetUser.id;
+    state.game.bankerName = targetUser.name;
+    state.game.auditLog.unshift(`👑 KHAZANCHI BADLAAV: Puraane Banker ne [${targetUser.name}] ko Banker ki gaddi saup di!`);
+    saveStateToDatabase().catch(()=>{});
     io.emit('stateSync', getPublicState());
 
-      sendPushToUser(user.id, {
-        title: '👑 Aap Bane Naye Banker!',
-        body: 'Aapko table ka Khazanchi (Banker) bana diya gaya hai.',
-        icon: '/icons/icon-192.png'
-      });
-    }
+    sendPushToUser(targetUser.id, {
+      title: '👑 Aap Bane Naye Banker!',
+      body: `Pichle Banker ne aapko table ka naya Khazanchi (Banker) bana diya hai.`,
+      icon: '/icons/icon-192.png'
+    });
   });
 
   socket.on('updateConfig', async ({ baseBuyInCash, baseStartingChips, chipConfig }) => {
@@ -498,9 +575,28 @@ io.on('connection', (socket) => {
     io.emit('stateSync', getPublicState());
   });
 
+  socket.on('joinRoomUser', async ({ userId }) => {
+    const uid = Number(userId);
+    if (!state.game.roomMembers) state.game.roomMembers = [];
+    if (uid && !state.game.roomMembers.includes(uid)) {
+      state.game.roomMembers.push(uid);
+      const u = state.users.find(x => x.id === uid);
+      if (u) {
+        state.game.auditLog.unshift(`${u.avatar || '👤'} [${u.name}] room me dakhil ho gaye.`);
+      }
+      saveStateToDatabase().catch(()=>{});
+      io.emit('stateSync', getPublicState());
+    }
+  });
+
+  // RULE: ADMIN CANNOT PLAY POKER (SEAT DISABLED FOR ADMIN)
   socket.on('joinTable', async ({ userId }) => {
     const user = state.users.find(u => u.id === Number(userId));
     if (!user || user.isDisabled) return;
+    if (user.isAdmin) {
+      socket.emit('actionError', 'Admin poker table par nahi baith sakte! Admin sirf addaa manage karenge.');
+      return;
+    }
     if (state.game.players.some(p => p.userId === user.id)) return;
 
     const initialCash = state.game.baseBuyInCash;
@@ -560,12 +656,14 @@ io.on('connection', (socket) => {
     if (state.game.bankerUserId) {
       sendPushToUser(state.game.bankerUserId, pushPayload);
     }
-    state.users.filter(u => u.isAdmin && u.id !== state.game.bankerUserId).forEach(admin => {
-      sendPushToUser(admin.id, pushPayload);
-    });
   });
 
-  socket.on('approveRebuy', async (requestId) => {
+  // BANKER ONLY: Approve Rebuy
+  socket.on('approveRebuy', async ({ bankerUserId, requestId }) => {
+    if (Number(state.game.bankerUserId) !== Number(bankerUserId)) {
+      socket.emit('actionError', 'Sirf Banker hi rebuy approve kar sakta hai!');
+      return;
+    }
     const idx = state.game.pendingRebuys.findIndex(r => r.requestId === requestId);
     if (idx === -1) return;
     const req = state.game.pendingRebuys[idx];
@@ -587,7 +685,12 @@ io.on('connection', (socket) => {
     io.emit('stateSync', getPublicState());
   });
 
-  socket.on('rejectRebuy', async (requestId) => {
+  // BANKER ONLY: Reject Rebuy
+  socket.on('rejectRebuy', async ({ bankerUserId, requestId }) => {
+    if (Number(state.game.bankerUserId) !== Number(bankerUserId)) {
+      socket.emit('actionError', 'Sirf Banker hi rebuy reject kar sakta hai!');
+      return;
+    }
     const idx = state.game.pendingRebuys.findIndex(r => r.requestId === requestId);
     if (idx === -1) return;
     const req = state.game.pendingRebuys[idx];
@@ -621,7 +724,6 @@ io.on('connection', (socket) => {
 
     state.game.expenses.push(exp);
     state.game.auditLog.unshift(`🧾 Kharcha Log: [${user.name}] ne ₹${amount} kharch kiye "${exp.title}" par.`);
-    // Auto re-calculate expense settlement if active
     state.game.expenseSettlement = calculatePureExpenseSettlement();
     saveStateToDatabase().catch(()=>{});
     io.emit('stateSync', getPublicState());
@@ -635,10 +737,14 @@ io.on('connection', (socket) => {
     io.emit('stateSync', getPublicState());
   });
 
-  // Calculate Kharcha Settlement specifically in Kharcha Tab
-  socket.on('calculateExpenseSettlement', async () => {
+  // BANKER ONLY: Trigger Settle Kharcha
+  socket.on('calculateExpenseSettlement', async ({ triggerUserId }) => {
+    if (Number(state.game.bankerUserId) !== Number(triggerUserId)) {
+      socket.emit('actionError', 'Kharcha sirf maujooda Banker hi settle kar sakta hai!');
+      return;
+    }
     state.game.expenseSettlement = calculatePureExpenseSettlement();
-    state.game.auditLog.unshift(`🧾 Kharchon ka hisaab calculate ho gaya: Kul ₹${state.game.expenseSettlement.totalExpenses}`);
+    state.game.auditLog.unshift(`🧾 Khazanchi (Banker) ne party kharcha settle kiya: Kul ₹${state.game.expenseSettlement.totalExpenses}`);
     saveStateToDatabase().catch(()=>{});
     io.emit('stateSync', getPublicState());
   });
@@ -667,18 +773,27 @@ io.on('connection', (socket) => {
     io.emit('stateSync', getPublicState());
   });
 
-  // Calculates strictly PURE POKER settlement in Cashout Tab
-  socket.on('finalizePokerSettlement', async () => {
+  // BANKER ONLY: Finalize Poker Settlement
+  socket.on('finalizePokerSettlement', async ({ triggerUserId }) => {
+    if (Number(state.game.bankerUserId) !== Number(triggerUserId)) {
+      socket.emit('actionError', 'Poker game ka hisaab sirf maujooda Banker hi nikaal sakta hai!');
+      return;
+    }
     const settlement = calculatePurePokerSettlement();
     state.game.status = 'SETTLED';
     state.game.pokerSettlement = settlement;
-    state.game.auditLog.unshift(`🏁 POKER HISAAB TAYAAR: Pot: ₹${settlement.totalPot}. Pure Poker Game ke lena-dena instructions ready.`);
+    state.game.auditLog.unshift(`🏁 POKER HISAAB TAYAAR: Banker ne table settlement final kar di.`);
     saveStateToDatabase().catch(()=>{});
     io.emit('stateSync', getPublicState());
   });
 
-  // Archive & Close Session
-  socket.on('closeAndArchiveGame', async () => {
+  // BANKER ONLY: Archive & Close Session
+  socket.on('closeAndArchiveGame', async ({ triggerUserId }) => {
+    if (Number(state.game.bankerUserId) !== Number(triggerUserId)) {
+      socket.emit('actionError', 'Game sirf maujooda Banker hi close aur archive kar sakta hai!');
+      return;
+    }
+
     if (!state.game.pokerSettlement) {
       state.game.pokerSettlement = calculatePurePokerSettlement();
     }
@@ -704,7 +819,7 @@ io.on('connection', (socket) => {
       id: Date.now(),
       roomCode: 'ADDAA' + Math.floor(10 + Math.random() * 90),
       status: 'ACTIVE',
-      bankerUserId: state.game.bankerUserId,
+      bankerUserId: state.game.bankerUserId, // Retain current Banker
       bankerName: state.game.bankerName,
       baseBuyInCash: state.game.baseBuyInCash,
       baseStartingChips: state.game.baseStartingChips,
@@ -713,6 +828,8 @@ io.on('connection', (socket) => {
       players: [],
       pendingRebuys: [],
       expenses: [],
+      roomMembers: [state.game.bankerUserId],
+      excludedExpenseUserIds: [],
       auditLog: [`Pichla game archive ho gaya. Naya addaa [${state.game.roomCode}] ready hai.`],
       pokerSettlement: null,
       expenseSettlement: null
@@ -733,14 +850,13 @@ io.on('connection', (socket) => {
         if (upiId !== undefined) p.upiId = upiId.trim();
       }
       saveStateToDatabase().catch(()=>{});
-    io.emit('stateSync', getPublicState());
+      io.emit('stateSync', getPublicState());
     }
   });
 });
 
 initDatabase().then(() => {
   server.listen(PORT, () => {
-  console.log(`♠️ Poker Addaa with fully separated Kharcha & Poker tabs running on port ${PORT}`);
-});
-
+    console.log(`♠️ Poker Addaa with strictly enforced Roles running on port ${PORT}`);
+  });
 });
