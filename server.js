@@ -232,36 +232,64 @@ function calculatePurePokerSettlement() {
   };
 }
 
-// 2. PURE KHARCHA SETTLEMENT (Strictly expenses & splitwise fair share only, Zero poker chips included)
-function calculatePureExpenseSettlement() {
-  const users = state.game.players.length > 0 ? state.game.players : state.users.filter(u => u.isApproved && !u.isDisabled);
-  const expenses = state.game.expenses;
-  const count = users.length;
-  if (count === 0 || expenses.length === 0) {
-    return { totalExpenses: 0, fairShare: 0, balances: [], transactions: [] };
-  }
+// 2. PURE KHARCHA SETTLEMENT (Strictly expenses & splitwise fair share among all registered/approved members)
+function getActiveExpenseMembers() {
+  // Combine all approved users in the club. If poker players exist, ensure they are also included.
+  const approvedMap = new Map();
+  state.users.filter(u => u.isApproved && !u.isDisabled).forEach(u => {
+    approvedMap.set(Number(u.id), {
+      id: Number(u.id),
+      name: u.name,
+      avatar: u.avatar || '👤',
+      upiId: u.upiId || ''
+    });
+  });
 
-  const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount), 0);
-  const fairShare = Math.round((totalExpenses / count) * 100) / 100;
-
-  const expensePaidMap = {};
-  users.forEach(u => { expensePaidMap[u.userId || u.id] = 0; });
-  expenses.forEach(e => {
-    const uid = e.payerId;
-    if (expensePaidMap[uid] !== undefined) {
-      expensePaidMap[uid] += Number(e.amount);
+  // Also ensure any player in expenses who paid is recognized
+  state.game.expenses.forEach(e => {
+    const pid = Number(e.payerId);
+    if (!approvedMap.has(pid)) {
+      const u = state.users.find(x => Number(x.id) === pid);
+      if (u) {
+        approvedMap.set(pid, {
+          id: pid,
+          name: u.name,
+          avatar: u.avatar || '👤',
+          upiId: u.upiId || ''
+        });
+      }
     }
   });
 
-  const balances = users.map(u => {
-    const uid = u.userId || u.id;
-    const paid = expensePaidMap[uid] || 0;
+  return Array.from(approvedMap.values());
+}
+
+function calculatePureExpenseSettlement() {
+  const members = getActiveExpenseMembers();
+  const expenses = state.game.expenses;
+  const count = Math.max(1, members.length);
+
+  const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount), 0);
+  const fairShare = totalExpenses > 0 ? (Math.round((totalExpenses / count) * 100) / 100) : 0;
+
+  const expensePaidMap = {};
+  members.forEach(m => { expensePaidMap[m.id] = 0; });
+
+  expenses.forEach(e => {
+    const pid = Number(e.payerId);
+    if (expensePaidMap[pid] !== undefined) {
+      expensePaidMap[pid] += Number(e.amount);
+    }
+  });
+
+  const balances = members.map(m => {
+    const paid = expensePaidMap[m.id] || 0;
     const net = paid - fairShare;
     return {
-      userId: uid,
-      name: u.name,
-      avatar: u.avatar,
-      upiId: u.upiId,
+      userId: m.id,
+      name: m.name,
+      avatar: m.avatar,
+      upiId: m.upiId,
       paidAmount: paid,
       fairShare: fairShare,
       expenseNet: Math.round(net * 100) / 100
@@ -272,6 +300,7 @@ function calculatePureExpenseSettlement() {
 
   return {
     totalExpenses,
+    playerCount: count,
     fairShare,
     balances,
     transactions,
@@ -359,11 +388,13 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 function getPublicState() {
-  // Always compute live expense summary in real-time
-  const usersForExpense = state.game.players.length > 0 ? state.game.players : state.users.filter(u => u.isApproved && !u.isDisabled);
+  // Always compute live expense summary in real-time across all active club members
+  const membersForExp = typeof getActiveExpenseMembers === 'function' 
+    ? getActiveExpenseMembers() 
+    : state.users.filter(u => u.isApproved && !u.isDisabled);
   const totalExp = state.game.expenses.reduce((s, e) => s + Number(e.amount), 0);
-  const pCount = Math.max(1, usersForExpense.length);
-  const fairShare = Math.round((totalExp / pCount) * 100) / 100;
+  const pCount = Math.max(1, membersForExp.length);
+  const fairShare = totalExp > 0 ? (Math.round((totalExp / pCount) * 100) / 100) : 0;
   state.game.liveExpenseStats = {
     totalExpenses: totalExp,
     playerCount: pCount,

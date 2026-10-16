@@ -1,7 +1,7 @@
 {
   "name": "poker-addaa-pro",
-  "version": "13.0.0",
-  "description": "Poker Addaa Pro - Live Real-Time Party Kharcha and Per-Player Fair Share display for all players, 100% Separated Tabs, Push Notifications & Clean Luxury UI",
+  "version": "15.0.0",
+  "description": "Poker Addaa Pro - 100% Fixed Kharcha Split Across All Club Members",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

@@ -590,22 +590,66 @@ function renderPurePokerSettlement(settlement, isBankerOrAdmin) {
 function renderPureExpenseSettlement(settlement) {
   const container = document.getElementById('pureExpenseSettlementReport');
   if (!settlement) {
-    container.innerHTML = '<p class="text-xs text-slate-500 text-center py-2">Kharcha settlement dekhne ke liye "Kharcha Settle Karo" dabayein.</p>';
+    container.innerHTML = '<p class="text-xs text-slate-500 text-center py-2 font-medium">Kharcha settlement dekhne ke liye "Kharcha Settle Karo" dabayein.</p>';
     return;
   }
 
+  const pCount = settlement.playerCount || (settlement.balances ? settlement.balances.length : 1);
+
   let html = `
-    <div class="grid grid-cols-2 gap-2 bg-gray-950 p-3 rounded-xl border border-indigo-500/30 text-center text-xs font-mono">
+    <div class="grid grid-cols-3 gap-2 bg-gray-950 p-3 rounded-xl border border-indigo-500/30 text-center text-xs font-mono">
       <div>
-        <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-bold">Total Party Kharcha</span>
-        <span class="text-indigo-400 font-bold text-sm">₹${settlement.totalExpenses}</span>
+        <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-bold">Party Kharcha</span>
+        <span class="text-indigo-400 font-black text-sm">₹${settlement.totalExpenses}</span>
       </div>
       <div>
-        <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-bold">Har Khiladi Ka Hissa</span>
-        <span class="text-slate-100 font-bold text-sm">₹${settlement.fairShare} / person</span>
+        <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-bold">Khiladi</span>
+        <span class="text-slate-200 font-bold text-sm">${pCount} log</span>
+      </div>
+      <div>
+        <span class="text-[9px] uppercase tracking-wider text-amber-400 block font-bold">Per Head Share</span>
+        <span class="text-amber-300 font-black text-sm">₹${settlement.fairShare}</span>
       </div>
     </div>
 
+    <!-- Per-Player Contribution Breakdown -->
+    <div class="space-y-1.5 pt-1">
+      <div class="text-[11px] font-bold text-slate-200 uppercase tracking-wider flex justify-between">
+        <span>Khiladiyon Ka Kharcha Breakdown:</span>
+        <span class="text-[10px] text-slate-400 font-normal">Paid vs Share</span>
+      </div>
+      <div class="bg-gray-950 rounded-xl border border-white/10 overflow-hidden divide-y divide-white/5">
+        ${(settlement.balances || []).map(b => {
+          const isCreditor = b.expenseNet > 0;
+          const isDebtor = b.expenseNet < 0;
+          const colorClass = isCreditor ? 'text-emerald-400' : isDebtor ? 'text-rose-400' : 'text-slate-400';
+          const sign = b.expenseNet > 0 ? '+' : '';
+          return `
+            <div class="p-2.5 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span class="text-lg leading-none">${b.avatar || '👤'}</span>
+                <div>
+                  <div class="font-bold text-white">${b.name}</div>
+                  <div class="text-[10px] text-slate-400 font-mono">
+                    Kharch kiya: ₹${b.paidAmount || 0} | Fair Share: ₹${b.fairShare || settlement.fairShare}
+                  </div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="font-mono font-black text-sm ${colorClass}">
+                  ${sign}₹${b.expenseNet}
+                </div>
+                <span class="text-[9px] font-mono font-bold ${isCreditor ? 'text-emerald-400' : isDebtor ? 'text-rose-400' : 'text-slate-400'}">
+                  ${isCreditor ? 'LEGA (GETS BACK)' : isDebtor ? 'DEGA (OWES)' : 'SETTLED'}
+                </span>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- Who Pays Whom -->
     <div class="space-y-2 pt-1">
       <div class="text-xs font-extrabold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
         <span>🧾</span> Sirf Kharcha Ka Lena-Dena (Bills Settlement):
@@ -614,7 +658,7 @@ function renderPureExpenseSettlement(settlement) {
 
   const txs = settlement.transactions || [];
   if (txs.length === 0) {
-    html += `<div class="p-3 text-center text-xs text-slate-400 bg-gray-950 rounded-xl border border-white/10">Kharchon ka hisaab bilkul barabar hai!</div>`;
+    html += `<div class="p-3 text-center text-xs text-slate-400 bg-gray-950 rounded-xl border border-white/10">Kharchon ka hisaab bilkul barabar hai! Kisi ko kuch nahi dena.</div>`;
   } else {
     html += txs.map(t => `
       <div class="bg-gray-900 border border-indigo-500/20 p-3 rounded-xl flex items-center justify-between text-xs shadow-sm">
@@ -643,8 +687,6 @@ function renderPureExpenseSettlement(settlement) {
   html += `</div>`;
   container.innerHTML = html;
 }
-
-
 
 function renderDetailedHistory(history) {
   const container = document.getElementById('gameHistoryList');
