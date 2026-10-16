@@ -1,7 +1,7 @@
 {
   "name": "poker-addaa-pro",
-  "version": "10.0.0",
-  "description": "Poker Addaa Pro - Web Push Notifications for Banker Rebuys, Luxury UI, PWA & Hinglish Banter",
+  "version": "11.0.0",
+  "description": "Poker Addaa Pro - Red Chip (2000), Separate Poker and Kharcha Settlement Sections, Web Push & Clean Luxury UI",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

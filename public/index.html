@@ -283,18 +283,33 @@
           </button>
         </div>
 
-        <!-- Settlement Card -->
-        <div class="glass-card p-4 rounded-2xl space-y-3 shadow-lg border border-white/10">
-          <div class="flex justify-between items-center">
+        
+        <!-- Final Settlement Section with SEPARATE Poker, Kharcha, and Combined Views -->
+        <div class="glass-card p-4 rounded-2xl space-y-4 shadow-lg border border-white/10">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
             <div>
-              <h3 class="text-sm font-extrabold text-white">Final Hisaab (Poker + Kharcha)</h3>
-              <p class="text-[11px] text-slate-400">Sabka profit-loss jod kar ek single hisaab</p>
+              <h3 class="text-sm font-extrabold text-white">Final Hisaab (Separate & Combined)</h3>
+              <p class="text-[11px] text-slate-400">Poker aur Kharcha alag-alag aur ek saath dekhne ke liye</p>
             </div>
             <button id="btnFinalize" onclick="finalizeSettlement()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow active:scale-95 transition">
               Hisaab Calculate Karo
             </button>
           </div>
 
+          <!-- Section Switcher Tabs within Cashout -->
+          <div class="flex bg-gray-900 p-1 rounded-xl border border-white/10 text-xs font-semibold text-slate-400">
+            <button id="subtab_combined_btn" onclick="switchSettlementSubtab('combined')" class="flex-1 py-1.5 rounded-lg bg-amber-500 text-gray-950 font-black transition">
+              ⚡ Combined Net
+            </button>
+            <button id="subtab_poker_btn" onclick="switchSettlementSubtab('poker')" class="flex-1 py-1.5 rounded-lg hover:text-white transition">
+              ♠️ Sirf Poker
+            </button>
+            <button id="subtab_kharcha_btn" onclick="switchSettlementSubtab('kharcha')" class="flex-1 py-1.5 rounded-lg hover:text-white transition">
+              🧾 Sirf Kharcha
+            </button>
+          </div>
+
+          <!-- Settlement Content Reports -->
           <div id="settlementReport" class="space-y-3">
             <p class="text-xs text-slate-500 text-center py-2">Game khatam hone par "Hisaab Calculate Karo" dabayein.</p>
           </div>
@@ -307,6 +322,7 @@
             <p class="text-[10px] text-slate-400 text-center mt-1">Ye summary ko permanent history me save karke naya room kholega.</p>
           </div>
         </div>
+
       </section>
 
       <!-- Tab 4: Purana Hisaab / Old Sessions -->
