@@ -582,7 +582,7 @@ function renderPurePokerSettlement(settlement, isBankerOrAdmin) {
   const closeBox = document.getElementById('closeGameSection');
 
   if (!settlement) {
-    if (closeBox) closeBox.classList.add('hidden');
+    if (closeBox) closeBox.classList.toggle('hidden', !isBankerOrAdmin);
     container.innerHTML = '<p class="text-xs text-slate-500 text-center py-2">Game khatam hone par "Poker Hisaab Nikalo" dabayein.</p>';
     return;
   }
