@@ -1,7 +1,7 @@
 {
   "name": "poker-addaa-pro",
-  "version": "17.0.0",
-  "description": "Poker Addaa Pro - Enforced Roles: Admin manager (no play), Banker settlement & handover, Kharcha exclusion toggle, and Live Visibility",
+  "version": "18.0.0",
+  "description": "Poker Addaa Pro - Admin can change Banker and Close Game anytime",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

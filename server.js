@@ -527,14 +527,16 @@ io.on('connection', (socket) => {
     io.emit('stateSync', getPublicState());
   });
 
-  // ONLY CURRENT BANKER CAN HAND OVER BANKER ROLE TO ANOTHER PLAYER
+  // ADMIN OR CURRENT BANKER CAN CHANGE BANKER AT ANY TIME
   socket.on('assignBanker', async ({ currentBankerUserId, newBankerUserId }) => {
-    const currentBankerId = Number(currentBankerUserId);
+    const senderId = Number(currentBankerUserId);
     const newBankerId = Number(newBankerUserId);
 
-    // Rule: Pahle se bana hua Banker hi doosre ko Banker bana sakta hai!
-    if (Number(state.game.bankerUserId) !== currentBankerId) {
-      socket.emit('actionError', 'Sirf maujooda Banker hi kisi aur ko Banker bana sakta hai!');
+    const sender = state.users.find(u => u.id === senderId);
+    const isAllowed = sender && (sender.isAdmin || Number(state.game.bankerUserId) === sender.id);
+
+    if (!isAllowed) {
+      socket.emit('actionError', 'Sirf Admin ya maujooda Banker hi naya Banker bana sakte hain!');
       return;
     }
 
@@ -545,15 +547,16 @@ io.on('connection', (socket) => {
       return;
     }
 
+    const whoChanged = sender.isAdmin ? 'Admin Sahab' : 'Puraane Banker';
     state.game.bankerUserId = targetUser.id;
     state.game.bankerName = targetUser.name;
-    state.game.auditLog.unshift(`👑 KHAZANCHI BADLAAV: Puraane Banker ne [${targetUser.name}] ko Banker ki gaddi saup di!`);
+    state.game.auditLog.unshift(`👑 KHAZANCHI BADLAAV: ${whoChanged} ne [${targetUser.name}] ko Banker bana diya!`);
     saveStateToDatabase().catch(()=>{});
     io.emit('stateSync', getPublicState());
 
     sendPushToUser(targetUser.id, {
       title: '👑 Aap Bane Naye Banker!',
-      body: `Pichle Banker ne aapko table ka naya Khazanchi (Banker) bana diya hai.`,
+      body: `${whoChanged} ne aapko table ka naya Khazanchi (Banker) bana diya hai.`,
       icon: '/icons/icon-192.png'
     });
   });
@@ -787,10 +790,14 @@ io.on('connection', (socket) => {
     io.emit('stateSync', getPublicState());
   });
 
-  // BANKER ONLY: Archive & Close Session
+  // ADMIN OR BANKER: Archive & Close Session at any time
   socket.on('closeAndArchiveGame', async ({ triggerUserId }) => {
-    if (Number(state.game.bankerUserId) !== Number(triggerUserId)) {
-      socket.emit('actionError', 'Game sirf maujooda Banker hi close aur archive kar sakta hai!');
+    const senderId = Number(triggerUserId);
+    const sender = state.users.find(u => u.id === senderId);
+    const isAllowed = sender && (sender.isAdmin || Number(state.game.bankerUserId) === sender.id);
+
+    if (!isAllowed) {
+      socket.emit('actionError', 'Sirf Admin ya maujooda Banker hi game close aur archive kar sakte hain!');
       return;
     }
 

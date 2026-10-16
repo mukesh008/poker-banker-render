@@ -366,7 +366,7 @@ function renderApp() {
   }
 
   if (closeBox) {
-    closeBox.classList.toggle('hidden', !isBanker);
+    closeBox.classList.toggle('hidden', !(isBanker || isAdmin));
   }
 
 
@@ -835,7 +835,7 @@ function renderAdminUserManagement(users) {
             </button>
 
             <!-- Banker Rule: Only Current Banker can pass Banker role to someone else -->
-            ${isCurrentBanker && !u.isBanker ? `
+            ${(isCurrentBanker || (currentUser && currentUser.isAdmin)) && !u.isBanker && !u.isAdmin ? `
               <button onclick="assignBanker(${u.id})" class="bg-amber-500 hover:bg-amber-400 text-gray-950 font-black text-[10px] px-2 py-1 rounded-lg shadow transition active:scale-95" title="Gaddi Saupo">
                 👑 Gaddi Do
               </button>
@@ -968,7 +968,7 @@ function deleteUser(userId) {
 
 function assignBanker(newBankerUserId) {
   if (!currentUser) return;
-  if (confirm("Kya aap apni Banker ki gaddi is khiladi ko saupna chahte hain?")) {
+  if (confirm("Kya aap is khiladi ko naya Banker banana chahte hain?")) {
     socket.emit('assignBanker', { currentBankerUserId: currentUser.id, newBankerUserId });
   }
 }
