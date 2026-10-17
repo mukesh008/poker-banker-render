@@ -321,58 +321,60 @@ function renderApp() {
     }
   }
 
-  const isBankerOrAdmin = currentUser && (currentUser.isAdmin || (latestState.game.bankerUserId === currentUser.id));
+    // Safely find seated player first (Prevents TDZ ReferenceError)
+  const seatedPlayer = latestState.game.players.find(p => Number(p.userId) === Number(currentUser.id));
+  const isBanker = currentUser && (Number(latestState.game.bankerUserId) === Number(currentUser.id));
+  const isAdmin = currentUser && Boolean(currentUser.isAdmin);
+  const isBankerOrAdmin = isBanker || isAdmin;
 
-  const isBanker = currentUser && (latestState.game.bankerUserId === currentUser.id);
-  const isAdmin = currentUser && currentUser.isAdmin;
-
-  // Rule 1: Admin cannot play poker!
+  // Seat controls and buy-in button
   const playerCashoutBox = document.getElementById('playerCashoutBox');
   const btnSeatPakdo = document.getElementById('btnSeatPakdo');
   const specTitle = document.getElementById('spectatorTitle');
   const specSubtitle = document.getElementById('spectatorSubtitle');
+  const joinBanner = document.getElementById('joinTableBanner');
+  const rebuyBox = document.getElementById('rebuyActionBox');
 
-  if (isAdmin) {
-    if (playerCashoutBox) playerCashoutBox.classList.add('hidden');
-    if (btnSeatPakdo) btnSeatPakdo.classList.add('hidden');
-    if (specTitle) specTitle.innerText = "👑 Admin Manager Mode";
-    if (specSubtitle) specSubtitle.innerText = "Aap club ke Malak/Manager hain. Aap poker nahi khel sakte.";
-  } else {
-    if (playerCashoutBox && seatedPlayer) playerCashoutBox.classList.remove('hidden');
-    if (btnSeatPakdo) btnSeatPakdo.classList.remove('hidden');
-    if (specTitle) specTitle.innerText = "Aap abhi bahar baithe tamasha dekh rahe ho!";
-    if (specSubtitle) specSubtitle.innerText = "Seat pakdo aur 1x Buy-in leke game me aao.";
+  // Toggle seat banner: If player is seated, hide join banner and show rebuy box
+  if (joinBanner) joinBanner.classList.toggle('hidden', Boolean(seatedPlayer));
+  if (rebuyBox) rebuyBox.classList.toggle('hidden', !seatedPlayer);
+  if (btnSeatPakdo) btnSeatPakdo.classList.remove('hidden');
+
+  if (specTitle) {
+    specTitle.innerText = "Aap abhi bahar baithe tamasha dekh rahe ho!";
+  }
+  if (specSubtitle) {
+    specSubtitle.innerText = "Seat pakdo aur 1x Buy-in leke game me aao.";
   }
 
-  // Rule 4: Only current Banker can settle!
+  if (playerCashoutBox) {
+    playerCashoutBox.classList.toggle('hidden', !seatedPlayer);
+  }
+
+  // Settlement and Close Game buttons
   const btnSettleKharcha = document.getElementById('btnSettleKharcha');
   const btnFinalizePoker = document.getElementById('btnFinalizePoker');
   const closeBox = document.getElementById('closeGameSection');
 
   if (btnSettleKharcha) {
-    btnSettleKharcha.disabled = !isBanker;
-    btnSettleKharcha.className = isBanker 
+    btnSettleKharcha.disabled = !isBankerOrAdmin;
+    btnSettleKharcha.className = isBankerOrAdmin 
       ? 'bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow active:scale-95 transition'
       : 'bg-gray-800 text-slate-500 cursor-not-allowed text-xs font-bold px-3 py-1.5 rounded-xl';
-    btnSettleKharcha.innerText = isBanker ? 'Kharcha Settle Karo' : 'Banker Settle Karega (Live View)';
+    btnSettleKharcha.innerText = isBankerOrAdmin ? 'Kharcha Settle Karo' : 'Banker Settle Karega (Live View)';
   }
 
   if (btnFinalizePoker) {
-    btnFinalizePoker.disabled = !isBanker;
-    btnFinalizePoker.className = isBanker
+    btnFinalizePoker.disabled = !isBankerOrAdmin;
+    btnFinalizePoker.className = isBankerOrAdmin
       ? 'bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow active:scale-95 transition'
       : 'bg-gray-800 text-slate-500 cursor-not-allowed text-xs font-bold px-3 py-1.5 rounded-xl';
-    btnFinalizePoker.innerText = isBanker ? 'Poker Hisaab Nikalo' : 'Banker Hisaab Nikalega (Live View)';
+    btnFinalizePoker.innerText = isBankerOrAdmin ? 'Poker Hisaab Nikalo' : 'Banker Hisaab Nikalega (Live View)';
   }
 
   if (closeBox) {
-    closeBox.classList.toggle('hidden', !(isBanker || isAdmin));
+    closeBox.classList.toggle('hidden', !isBankerOrAdmin);
   }
-
-
-  const seatedPlayer = latestState.game.players.find(p => p.userId === currentUser.id);
-  document.getElementById('joinTableBanner').classList.toggle('hidden', !!seatedPlayer);
-  document.getElementById('rebuyActionBox').classList.toggle('hidden', !seatedPlayer);
 
   renderTokenReferenceBar(latestState.game.chipConfig, latestState.game.ratePerChip);
   renderPlayers(latestState.game.players);

@@ -108,7 +108,15 @@ async function initDatabase() {
     const res = await pool.query(`SELECT data FROM app_storage WHERE key = 'poker_state' LIMIT 1;`);
     if (res.rows.length > 0 && res.rows[0].data) {
       const saved = res.rows[0].data;
-      if (saved.users && saved.users.length > 0) state.users = saved.users;
+      if (saved.users && saved.users.length > 0) {
+        state.users = saved.users;
+        // Ensure only root user ID 1 or dedicated admin is admin, all other players are regular players!
+        state.users.forEach(u => {
+          if (u.id !== 1 && u.name !== 'Owner Admin') {
+            u.isAdmin = false;
+          }
+        });
+      }
       if (saved.game) state.game = saved.game;
       if (saved.gameHistory) state.gameHistory = saved.gameHistory;
       console.log(`📦 Restored persistent data: ${state.users.length} users, ${state.gameHistory.length} archived sessions!`);
@@ -592,14 +600,9 @@ io.on('connection', (socket) => {
     }
   });
 
-  // RULE: ADMIN CANNOT PLAY POKER (SEAT DISABLED FOR ADMIN)
   socket.on('joinTable', async ({ userId }) => {
     const user = state.users.find(u => u.id === Number(userId));
     if (!user || user.isDisabled) return;
-    if (user.isAdmin) {
-      socket.emit('actionError', 'Admin poker table par nahi baith sakte! Admin sirf addaa manage karenge.');
-      return;
-    }
     if (state.game.players.some(p => p.userId === user.id)) return;
 
     const initialCash = state.game.baseBuyInCash;
